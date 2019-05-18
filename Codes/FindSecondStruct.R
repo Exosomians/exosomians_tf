@@ -91,14 +91,18 @@ DrawFeatureDistribution(DotBracket_3merMatrix)
 #### merging all design matrices together
 RNAsecondaryStructFeatures <- cbind(FreeEnergy, DotBracket_SingleMerMatrix ,DotBracket_3merMatrix)
 RNAsecondaryStructFeatures$DB <- DotBracketSecondStruct
+
+
+RNAstructColNames <- colnames(RNAsecondaryStructFeatures)
+RNAstructColNames <- sapply(RNAstructColNames, RefineSecondStructColNames, simplify = F)
+colnames(RNAsecondaryStructFeatures) <- RNAstructColNames
+
+
 write.csv(RNAsecondaryStructFeatures, 'Data/SecondStructFeatures_LenFilter.csv',row.names = T,col.names = T)
 
 TotalMatrixWithStruct <- cbind(TotalMatrix, RNAsecondaryStructFeatures)
 dim(TotalMatrixWithStruct)
 write.csv(TotalMatrixWithStruct, 'Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',row.names = T,col.names = T)
-
-test <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv', stringsAsFactors = F)
-
 
 
 

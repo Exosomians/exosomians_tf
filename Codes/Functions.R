@@ -7,13 +7,13 @@ Initialize = function()
   #BiocManager::install('pacman')
   
   pac <- list( 'ggplot2', 'limma', 'pheatmap','Biostrings','RNAstructureModuleMiner','RRNA',
-              'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 
+              'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret',
               'plyr', 'gridExtra','caTools', 'h2o','gtools','stringr')
   
   print(paste(pac , lapply(pac, require, character.only = TRUE), sep = ' : '))
   
   pacman::p_load( 'ggplot2', 'limma', 'pheatmap', 'Biostrings','RNAstructureModuleMiner','RRNA',
-                 'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer',
+                 'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret',
                  'plyr','gridExtra','caTools','h2o','gtools','stringr')
 }
 
@@ -71,7 +71,6 @@ MakeKmerForDotBracket <- function(nucleotide, dotbracket, kmerSize){
 
 
 
-
 MakeFeatureSpecificMatrix <- function(All_possible_features, extractedFromData, id){
   
   MatchData2Features <- sapply(1:length(extractedFromData), 
@@ -94,12 +93,34 @@ Make_All_Possible_Kmers <- function(KmerSize, VectorSize ,VectorOfElements){
 
 
 
+
 DrawFeatureDistribution <- function(FeatureMat ){
   featureDis <- melt(colSums(FeatureMat))
   featureDis <- data.frame(kmer=rownames(featureDis),Count=featureDis$value)
   ggplot(featureDis,aes(x=kmer,y=Count,color='black'))+
     geom_bar(stat = 'identity',color="dark blue", fill="cadetblue2",width=0.6)+xlab('Feature')+theme_bw()+coord_flip()
 }
+
+
+
+
+DrawFeatureDistribution_LabelBased <- function(FeatureMat){
+  FeatureMatSplit <-  split(FeatureMat, FeatureMat$label)
+  FeatureMatSplit <- lapply(FeatureMatSplit, function(x) melt(colSums(x[,1:ncol(x)-1])))
+  FeatureMatSplit <- lapply(FeatureMatSplit, function(x) x/sum(x))
+  FeatureMatSplit <- sapply(1:length(FeatureMatSplit), function(i)
+    data.frame(Feature=rownames(FeatureMatSplit[[i]]),
+               Count=FeatureMatSplit[[i]]$value, 
+               label=names(FeatureMatSplit)[i]),simplify = F)
+  
+  FeatureMat <- do.call(rbind, FeatureMatSplit)
+  ggplot(FeatureMat,aes(x=Feature, y=Count, fill=label))+
+    geom_bar(stat = 'identity',width=0.6, position = position_dodge(), color='black')+
+    xlab('Feature')+ylab('Frequency')+theme_bw()+coord_flip()
+}
+
+
+
 
 
 
@@ -113,16 +134,20 @@ RefineSecondStructColNames <- function(StructColName){
 
 
 
+MakeNumeric <- function(ChrToNum){ifelse(as.character(ChrToNum)=='YES',1,0)}
+
+
+
 draw_confusion_matrix <- function(cm, ModelName ,
-                                  ManualFirstClassName, ManualSecondClassName,
-                                  ManualFirstClassColor, ManualSecondClassColor) {
+                                  FirstClassName=NULL, SecondClassName=NULL,
+                                  FirstClassColor=NULL, SecondClassColor=NULL) {
   
-  ifelse(missing(ManualFirstClassColor), FirstClassColor='#3F97D0', FirstClassColor=ManualFirstClassColor)
-  ifelse(missing(ManualSecondClassColor), SecondClassColor='#3F97D0', SecondClassColor=ManualSecondClassColor)
+  if(is.null(FirstClassName)){FirstClassName='Class1'}
+  if(is.null(SecondClassName)){SecondClassName='Class1'}
   
-  ifelse(missing(ManualFirstClassName), FirstClassName='Class1', FirstClassName=ManualFirstClassName)
-  ifelse(missing(ManualSecondClassName), SecondClassName='Class2', SecondClassName=ManualSecondClassName)
-  
+  if(is.null(FirstClassColor)){FirstClassColor='#3F97D0'}
+  if(is.null(SecondClassColor)){SecondClassColor='darkgoldenrod1'}
+
   layout(matrix(c(1,1,2)))
   par(mar=c(2,2,2,2))
   plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')

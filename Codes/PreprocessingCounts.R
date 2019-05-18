@@ -165,3 +165,26 @@ write.csv(TotalMatrix, 'Data/MergedDesignMatLabel_LenFilter.csv',quote = F, na =
 
 
 
+
+
+### visualize feature distribution 
+pdf('plots/FeatureCor.pdf',width = 10, height = 10)
+pheatmap(cor(subset(designMat,select=c(a,c,t,g))))
+pheatmap(cor(Nucleotide_KmerMatrix[,-1]),show_rownames = F, show_colnames = F)
+pheatmap(cor(RNAsecondaryStructFeatures[,6:ncol(RNAsecondaryStructFeatures)-1]),main = 'DotBracket-Feature-correlation')
+dev.off()
+
+
+### label-based distributions
+DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(a, t, c, g, label)))
+DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(X0, X1, label)))
+DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(All_Possible_Kmers,'label')))
+DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, 
+                                          select=c(colnames(TotalMatrixWithStruct)[277:ncol(TotalMatrixWithStruct)-1],'label')))
+
+
+pdf('plots/DotBracketTriMerDistr_labelBasedPerc.pdf',height = 12)
+pdf('plots/NucKmerDisLabelBasedPerc.pdf',height = 35, width = 6)
+dev.off()
+
+

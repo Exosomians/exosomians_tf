@@ -27,3 +27,14 @@ write.csv(Nucleotide_KmerMatrix,'Data/ngramMatrix.csv',quote = F)
 designMatNgram <- cbind(designMat, Nucleotide_KmerMatrix)
 write.csv(designMatNgram,'Data/NgramLen4DesignMatrix.csv',quote = F)
 
+
+
+
+
+
+
+
+
+
+
+
