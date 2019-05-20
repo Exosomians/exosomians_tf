@@ -51,7 +51,7 @@ Counts <- RefineCellLineNames(countsFiles)
 
 
 ### filtering Counts based on Valid IDs defined by Ali
-ValidIDs <- designMat2$id
+ValidIDs <- designMat$id
 Counts <- lapply(Counts, function(x) x[rownames(x) %in% ValidIDs,])
 
 
@@ -165,22 +165,23 @@ write.csv(TotalMatrix, 'Data/MergedDesignMatLabel_LenFilter.csv',quote = F, na =
 
 
 
+TotalMatrixWithStruct = read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',stringsAsFactors = F)
 
 
 ### visualize feature distribution 
 pdf('plots/FeatureCor.pdf',width = 10, height = 10)
-pheatmap(cor(subset(designMat,select=c(a,c,t,g))))
+pheatmap(cor(subset(designMat,select=c(a,c,u,g))))
 pheatmap(cor(Nucleotide_KmerMatrix[,-1]),show_rownames = F, show_colnames = F)
 pheatmap(cor(RNAsecondaryStructFeatures[,6:ncol(RNAsecondaryStructFeatures)-1]),main = 'DotBracket-Feature-correlation')
 dev.off()
 
 
 ### label-based distributions
-DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(a, t, c, g, label)))
+DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(a, u, c, g, label)))
 DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(X0, X1, label)))
 DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, select=c(All_Possible_Kmers,'label')))
 DrawFeatureDistribution_LabelBased(subset(TotalMatrixWithStruct, 
-                                          select=c(colnames(TotalMatrixWithStruct)[277:ncol(TotalMatrixWithStruct)-1],'label')))
+                                          select=c(colnames(TotalMatrixWithStruct)[278:ncol(TotalMatrixWithStruct)-1],'label')))
 
 
 pdf('plots/DotBracketTriMerDistr_labelBasedPerc.pdf',height = 12)

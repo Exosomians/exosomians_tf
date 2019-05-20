@@ -38,7 +38,7 @@ writeFasta(Sequence, "Data/RegionsLenFilter.fasta")
 # RNAfold  -i RegionsLenFilter.fasta -o RNAseconStructPredict.txt
 # grep '(\|>' RNAseconStructPredict.txt > RNAseconStructPredict_withoutSeq.txt
 
-RNAseqFasta <- readDNAStringSet('Data/RegionsLenFilter.fasta')
+RNAseqFasta <- readRNAStringSet('Data/RegionsLenFilter.fasta')
 SeqID = names(RNAseqFasta)
 RNAseqLength <- nchar(paste(RNAseqFasta))
 hist(RNAseqLength,breaks = seq(1,520,10))
@@ -77,7 +77,7 @@ DrawFeatureDistribution(DotBracket_SingleMerMatrix)
 
 # add middle nucleotide to the K-mer 
 All_Possible_DotBracket_3Kmer <-unlist(sapply(1:4, function(i) 
-                                                paste0(c('A','T','C','G')[i],  Make_All_Possible_Kmers(3, 2,  c('(','.') )),simplify=F ))
+                                                paste0(c('A','U','C','G')[i],  Make_All_Possible_Kmers(3, 2,  c('(','.') )),simplify=F ))
 # replace ')' with '('
 DotBracket_3mer <- sapply(1:length(DotBracketSecondStruct), function(i) 
                             MakeKmerForDotBracket(Sequence$seq[i],
