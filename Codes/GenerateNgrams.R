@@ -4,13 +4,13 @@
 #     then, we'll check the count of the ngrams in each RNA sequence
 
 
-designMat = read.csv('Data/PrimaryDesignMat.csv')
+designMat = read.csv('Data/SecondaryDesignMat_UsingRNAizedComplementedSeqs.csv')
 
 source('Codes/Functions.R')
 Initialize()
 
 K_MER_SIZE = 4
-All_Possible_Kmers <- Make_All_Possible_Kmers(K_MER_SIZE, 4, c('A','T','C','G'))
+All_Possible_Kmers <- Make_All_Possible_Kmers(K_MER_SIZE, 4, c('A','U','C','G'))
 
 
 

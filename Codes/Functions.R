@@ -116,7 +116,7 @@ DrawFeatureDistribution_LabelBased <- function(FeatureMat){
   FeatureMat <- do.call(rbind, FeatureMatSplit)
   ggplot(FeatureMat,aes(x=Feature, y=Count, fill=label))+
     geom_bar(stat = 'identity',width=0.6, position = position_dodge(), color='black')+
-    xlab('Feature')+ylab('Frequency')+theme_bw()+coord_flip()
+    xlab('Feature')+ylab('Frequency')+theme_bw()#+coord_flip()
 }
 
 
