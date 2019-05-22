@@ -1,136 +1,135 @@
 source('Codes/Functions.R')
 Initialize()
+set.seed(123) 
+
+
 
 ### loading data
-# designMat <- read.csv('Data/filterNgramDesignMat.csv',stringsAsFactors = F)
-# LabelMat <- read.csv('Data/TertiaryLabelsMat.csv', stringsAsFactors = F)
 
 TotalMatrixWithStruct <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv', stringsAsFactors = F)
-
-LabelMat <- subset(TotalMatrixWithStruct, select=c('id','ic','ev','label'))
-ColumnsToDrop <- c('id','X','X.1','ic','ev','seq','DB','annotation','rnaType')
+ColumnsToDrop <- c('id','X','X.1','X.2','ic','ev','seq','DB','annotation','rnaType')
 designMat <- TotalMatrixWithStruct[,!colnames(TotalMatrixWithStruct) %in% ColumnsToDrop ]
-colnames(designMat)
 
 
 
-##### Data Preperation 
-set.seed(123) 
-split = sample.split(designMat$label , SplitRatio = 0.9) 
-training_set = subset(designMat, split == TRUE ) 
-test_set = subset(designMat, split == FALSE)
+### making all the designMatrices 
 
-
-colsToBeFactorized = c('chr', 'label', 'strand')
-training_set[colsToBeFactorized] = lapply(training_set[colsToBeFactorized], factor)
-test_set[colsToBeFactorized] = lapply(test_set[colsToBeFactorized], factor)
+designMat_minimal <- subset(designMat, select=c(chr:strand,label))
+designMat_minimal_SecondStruct <- subset(designMat, select = (label:G111))
+designMat_SecondStruct <- subset(designMat, select= -(AAAA:UUUU))
+designMat_NoSecStr <- subset(designMat, select=-(FreeEnergy:G111))
 
 
 
-################### SVM 
-## cross = 10 > cross-validation in the future
+### spliting designMatrices to label and features
 
-SVMlin_Bal = svm(formula= label~., data=training_set , type ='C-classification', kernel = 'linear',
-           class.weights= c("NO" = 1, "YES" = 10), probability= T, cachesize=10000)  ## balancing labels
-
-SVMrad_Bal = svm(formula= label~., data=training_set , type ='C-classification', kernel = 'radial',
-           class.weights= c("NO" = 1, "YES" = 10), probability= T, cachesize=10000) ## balancing labels + non-linear kernel
-
-SVMlin_NoBal = svm(formula= label~., data=training_set , type ='C-classification', kernel = 'linear',
-                   class.weights= c("NO" = 1, "YES" = 1), probability= T, cachesize=10000)
-
-SVMlin_NoStruct = svm(formula= label~., data=training_set[,1:264], type ='C-classification', kernel = 'linear',
-                      class.weights= c("NO" = 1, "YES" = 10), probability= T, cachesize=10000)  ## balancing labels
-
-SVMrad_NoStruct = svm(formula= label~., data=training_set[,1:264], type ='C-classification', kernel = 'radial',
-                      class.weights= c("NO" = 1, "YES" = 10), probability= T, cachesize=10000)  ## balancing labels
+DesignMetrices <- list(designMat_minimal, designMat_minimal_SecondStruct, designMat_SecondStruct, designMat, designMat_NoSecStr)
+SplitedDesignMetrices <- lapply(DesignMetrices, SplitLabelFromFeatures)
+Labels <- lapply(SplitedDesignMetrices, getLabel)
+Features <- lapply(SplitedDesignMetrices, getFeatures)
 
 
 
+### Spliting designMat to train and test
 
-#### loading the trained models 
-SVMlin_Bal <- readRDS('models/SVMlin_Bal.rds')
-SVMrad_Bal <- readRDS('models/SVMrad_Bal.rds')
-SVMlin_NoBal <- readRDS('models/SVMlin_NoBalrds')
-SVMlin_NoStruct <- readRDS('models/SVMlin_NoStruct.rds')
-SVMrad_NoStruct <- readRDS('models/SVMrad_NoStruct.rds')
+SplitList <- lapply(Labels, function(aListOflables) sample.split(aListOflables , SplitRatio = 0.75) )
+
+trainSet <- sapply(1:length(DesignMetrices),
+                            function(i){ 
+                              atrainSet = subset(DesignMetrices[[i]], SplitList[[i]])
+                              colsToBeFactorized = c('chr', 'strand', 'label')
+                              colsToBeFactorized = colsToBeFactorized[colsToBeFactorized %in% colnames(atrainSet)]
+                              if(length(colsToBeFactorized) ) atrainSet[colsToBeFactorized] = lapply(atrainSet[colsToBeFactorized], factor)
+                              atrainSet} , simplify = F)
+
+
+testSet <- sapply(1:length(DesignMetrices),
+                            function(i){ 
+                              atestSet = subset(DesignMetrices[[i]], !SplitList[[i]])
+                              colsToBeFactorized = c('chr', 'strand', 'label')
+                              colsToBeFactorized = colsToBeFactorized[colsToBeFactorized %in% colnames(atestSet)]
+                              if(length(colsToBeFactorized) ) atestSet[colsToBeFactorized] = lapply(atestSet[colsToBeFactorized], factor)
+                              atestSet} , simplify = F)
 
 
 
-### predicion on test data
-SVM_linBal_pred <- predict(SVMlin_Bal, test_set)
-SVM_radBal_pred <- predict(SVMrad_Bal, test_set)
-SVM_linNoBal_pred <- predict(SVMlin_NoBal, test_set)
-SVM_linNoStruct_pred <- predict(SVMlin_NoStruct, test_set)
-SVM_radNoStruct_pred <- predict(SVMrad_NoStruct, test_set)
+BalWeight = c("NO" = 1, "YES" = 10)
+unBalWeight = c("NO" = 1, "YES" = 1)
+
+### Training Sets
+trainSet_min <- trainSet[[1]]
+trainSet_minSecStr <- trainSet[[2]]
+trainSet_SecStr <- trainSet[[3]]
+trainSet_total <- trainSet[[4]]
+trainSet_noSecStr <- trainSet[[5]] 
+
+
+### Train SVM models
+SVMlin_Bal <- svmModel(trainSet_total, 'linear', BalWeight)
+SVMrad_Bal <- svmModel(trainSet_total, 'radial', BalWeight)
+SVMlin_NoBal <- svmModel(trainSet_total, 'linear', unBalWeight)
+SVMlin_NoStr <- svmModel(trainSet_noSecStr, 'linear', BalWeight)
+SVMrad_NoStr <- svmModel(trainSet_noSecStr, 'radial', BalWeight)
+SVMlin_SecStr_Bal <- svmModel(trainSet_SecStr, 'linear', BalWeight)
+SVMlin_min_Bal <- svmModel(trainSet_min,'linear',BalWeight)
+SVMlin_minSecStruct_Bal <- svmModel(trainSet_minSecStr,'linear',BalWeight)
+
+
+
+listOfModels <- list(SVMlin_Bal, SVMrad_Bal, SVMlin_NoBal, SVMlin_NoStr , SVMrad_NoStr,
+                  SVMlin_SecStr_Bal, SVMlin_min_Bal, SVMlin_minSecStruct_Bal)
+
+saveRDS(listOfModels, 'models/DNA2RNAdesignMat/listOfModels_SVM.rds')
+
+
+### Test Sets
+testSet_min <- testSet[[1]]
+testSet_minSecStr <- testSet[[2]]
+testSet_SecStr <- testSet[[3]]
+testSet_total <- testSet[[4]]
+testSet_noSecStr <- testSet[[5]]
+
+
+listOfTestSets <- list(testSet_total, testSet_total, testSet_total, testSet_noSecStr, 
+                       testSet_noSecStr, testSet_SecStr, testSet_min, testSet_minSecStr )
+
+
+
+listOfPreds <- sapply(1:length(listOfTestSets), 
+                      function(i){
+                        predict( listOfModels[[i]],  listOfTestSets[[i]])
+                      }, simplify = F)
+
+
+listOfTitles <- c('SVM-weighted(1:10)-linearKernel', 
+                  'SVM-weighted(1:10)-RadialKernel', 
+                  'SVM-unWeighted-linearKernel', 
+                  'SVM-weighted(1:10)-noStructFeature-linearKernel', 
+                  'SVM-weighted(1:10)-noStructFeature-radialKernel',
+                  'SVM-weighted(1:10)-SecondStruct(NO-Kmer)-linearKernel',
+                  'SVM-weighted(1:10)-Minimal-linearKernel',
+                  'SVM-weighted(1:10)-Min-SecStruct-linearKernel')
 
 
 
 #### SVM Model Evaluation
-pdf('plots/SVMresults.pdf')
-draw_confusion_matrix(confusionMatrix(data = SVM_linBal_pred , reference = test_set$label), 'SVM-weighted(1:10)-linearKernel', 'No','Yes')
-draw_confusion_matrix(confusionMatrix(data = SVM_radBal_pred , reference = test_set$label), 'SVM-weighted(1:10)-RadialKernel', 'No','Yes')
-draw_confusion_matrix(confusionMatrix(data = SVM_linNoBal_pred , reference = test_set$label), 'SVM-unWeighted-linearKernel', 'No','Yes')
-draw_confusion_matrix(confusionMatrix(data = SVM_linNoStruct_pred , reference = test_set$label), 'SVM-weighted(1:10)-noStructFeature-linearKernel', 'No','Yes')
-draw_confusion_matrix(confusionMatrix(data = SVM_radNoStruct_pred , reference = test_set$label), 'SVM-weighted(1:10)-noStructFeature-radialKernel', 'No','Yes')
+
+pdf('plots/SVMresults_DNA2RNA.pdf')
+sapply(1:length(listOfPreds), 
+       function(i){
+         draw_confusion_matrix(
+           confusionMatrix(
+             data = listOfPreds[[i]] , 
+             reference = listOfTestSets[[i]]$label), 
+           
+           listOfTitles[i], 'No','Yes')} )
+
 dev.off()
 
-## note: linear kernels did not converge > not able to increase max number of iterations
 
 
 
 
 
-######### Tuning SVM 
-
-### why doesn't this work??? can't handle the factors :/
-SVMrad_Bal_tune <- tune(method = svm, train.x=subset(training_set,select=-label) , train.y=training_set$label, 
-                 kernel="radial", ranges=list(cost=10^(-1:2), gamma=c(0.001,0.005,0.01,0.5,1,2))) #epsilon = seq(0,1,0.01)
-
-print(SVMrad_Bal_tune)
-svm_model_after_tune <- svm(Species ~ ., data=iris, kernel="radial", cost=1, gamma=0.5)
-summary(svm_model_after_tune)
-
-
-
-
-
-
-
-
-##### Parallel tuning for svm
-
-
-pkgs <- c('foreach', 'doParallel')
-lapply(pkgs, require, character.only = T)
-registerDoParallel(cores = 4)
-### PREPARE FOR THE DATA ###
-df1 <- read.csv("credit_count.txt")
-df2 <- df1[df1$CARDHLDR == 1, ]
-x <- paste("AGE + ACADMOS + ADEPCNT + MAJORDRG + MINORDRG + OWNRENT + INCOME + SELFEMPL + INCPER + EXP_INC")
-fml <- as.formula(paste("as.factor(label) ~ ", x))
-### SPLIT DATA INTO K FOLDS ###
-set.seed(2016)
-df2$fold <- caret::createFolds(1:nrow(df2), k = 4, list = FALSE)
-### PARAMETER LIST ###
-cost <- c(10, 100)
-gamma <- c(1, 2)
-parms <- expand.grid(cost = cost, gamma = gamma)
-### LOOP THROUGH PARAMETER VALUES ###
-result <- foreach(i = 1:nrow(parms), .combine = rbind) %do% {
-  c <- parms[i, ]$cost
-  g <- parms[i, ]$gamma
-  ### K-FOLD VALIDATION ###
-  out <- foreach(j = 1:max(df2$fold), .combine = rbind, .inorder = FALSE) %dopar% {
-    deve <- df2[df2$fold != j, ]
-    test <- df2[df2$fold == j, ]
-    mdl <- e1071::svm(fml, data = deve, type = "C-classification", kernel = "radial", cost = c, gamma = g, probability = TRUE)
-    pred <- predict(mdl, test, decision.values = TRUE, probability = TRUE)
-    data.frame(y = test$label, prob = attributes(pred)$probabilities[, 2])
-  }
-  ### CALCULATE SVM PERFORMANCE ###
-  roc <- pROC::roc(as.factor(out$y), out$prob) 
-  data.frame(parms[i, ], roc = roc$auc[1])
-}
 
 

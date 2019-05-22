@@ -133,8 +133,30 @@ RefineSecondStructColNames <- function(StructColName){
 
 
 
-
 MakeNumeric <- function(ChrToNum){ifelse(as.character(ChrToNum)=='YES',1,0)}
+
+
+
+SplitLabelFromFeatures <- function(aMatrix){
+  Splited <- list(subset(aMatrix,select=-label),  aMatrix$label)
+  names(Splited) <- c('features', 'label')
+  return(Splited)
+}
+
+
+getLabel <- function( aSplitedList ){ aSplitedList[['label']] }
+getFeatures <- function( aSplitedList ){ aSplitedList[['features']]}
+
+
+svmModel <- function( training_set, Kernel, Weights){
+  svm(formula= label~.,
+      data = training_set , 
+      type ='C-classification', 
+      kernel = Kernel ,
+      class.weights = Weights, 
+      probability = T, 
+      cachesize = 10000)
+}
 
 
 
