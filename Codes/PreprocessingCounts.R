@@ -121,7 +121,7 @@ DrawBoxPlot <- function(DataTable, Title){
 }
 
 
-LENGTH_MIN = 15
+LENGTH_MIN = 18
 LENGTH_MAX = 500
 
 pdf('RegionLengthDis.pdf',width=9)
@@ -150,7 +150,7 @@ print (paste0('number of labels without min-limit: ',
 print(paste0('number of labels with min-limit: ', 
              nrow(subset(FilteredBed, width<LENGTH_MAX & width>LENGTH_MIN))))
 
-LENGTH_MIN = 9
+LENGTH_MIN = 18
 
 
 #### making the final feature+label matrix and filtering it based on region length
@@ -165,13 +165,13 @@ write.csv(TotalMatrix, 'Data/MergedDesignMatLabel_LenFilter.csv',quote = F, na =
 
 
 
-TotalMatrixWithStruct = read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',stringsAsFactors = F)
+#TotalMatrixWithStruct = read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',stringsAsFactors = F)
 
 
 ### visualize feature distribution 
 pdf('plots/FeatureCor.pdf',width = 10, height = 10)
 pheatmap(cor(subset(designMat,select=c(a,c,u,g))))
-pheatmap(cor(Nucleotide_KmerMatrix[,-1]),show_rownames = F, show_colnames = F)
+pheatmap(cor(Nucleotide_KmerMatrix),show_rownames = F, show_colnames = F)
 pheatmap(cor(RNAsecondaryStructFeatures[,6:ncol(RNAsecondaryStructFeatures)-1]),main = 'DotBracket-Feature-correlation')
 dev.off()
 

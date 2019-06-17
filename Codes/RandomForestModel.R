@@ -1,15 +1,16 @@
 source('Codes/Functions.R')
-source('Codes/PrepareData.R')
-
-library("pROC")
-library('ROCR')
-
 Initialize()
 set.seed(123) 
 h2o.init(ip = 'localhost', port = 54321, nthreads= detectCores()-4, max_mem_size = '48g')
 
+
+trainSet <- readRDS('Data/trainSet.rds')
+testSet <- readRDS('Data/testSet.rds')
+Features <- readRDS('Data/Features.rds')
+
 designMatNames <- c('designMat_minimal', 'designMat_minimal_SecondStruct', 
                     'designMat_SecondStruct', 'designMat', 'designMat_NoSecStr')
+
 
 modelNames <- gsub('designMat','RF',designMatNames)
 featureNames <- lapply(Features, colnames)
@@ -40,12 +41,13 @@ listOfFeatureImportance <- lapply(listOfRFModels, h2o.varimp )
 names(listOfFeatureImportance) <- modelNames
 lapply(listOfFeatureImportance, function(x) x[x$scaled_importance>0.2,])
 
+
 listOfRFPreds <- sapply(1:length(listOfRFModels), 
                         function(i) as.data.frame( h2o.predict(listOfRFModels[[i]], testSet.h2o[[i]]) ), 
                         simplify = F)
 
 
-pdf('plots/RFresults_DNA2RNA.pdf')
+pdf('plots/RFresults_DNA2RNA_normalized.pdf')
 sapply(1:length(listOfRFModels), 
        function(i){
          draw_confusion_matrix(
@@ -75,5 +77,4 @@ ListOfRF_AUCs <- sapply(1:length(listOfRFModels),
                             labels = MakeNumeric(testSet[[i]]$label))
                           return(ROCR::performance(AUC,'auc')) }
                         , simplify = F)
-
 

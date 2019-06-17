@@ -3,18 +3,21 @@ Initialize = function()
 {
   #### Loading required libraries ####
   options(stringsAsFactors = F)
+  set.seed(123) 
   
   #BiocManager::install('pacman')
   
   pac <- list( 'ggplot2', 'limma', 'pheatmap','Biostrings','RNAstructureModuleMiner','RRNA',
-              'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret',
-              'plyr', 'gridExtra','caTools', 'h2o','gtools','stringr')
+              'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret','ggfortify',
+              'plyr', 'gridExtra','caTools', 'h2o','gtools','stringr', "pROC", 'ROCR', 'FactoMineR',
+              'factoextra')
   
   print(paste(pac , lapply(pac, require, character.only = TRUE), sep = ' : '))
   
   pacman::p_load( 'ggplot2', 'limma', 'pheatmap', 'Biostrings','RNAstructureModuleMiner','RRNA',
-                 'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret',
-                 'plyr','gridExtra','caTools','h2o','gtools','stringr')
+                 'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret','ggfortify',
+                 'plyr','gridExtra','caTools','h2o','gtools','stringr', "pROC", 'ROCR', 'FactoMineR',
+                 'factoextra')
 }
 
 
@@ -144,8 +147,10 @@ SplitLabelFromFeatures <- function(aMatrix){
 }
 
 
+
 getLabel <- function( aSplitedList ){ aSplitedList[['label']] }
 getFeatures <- function( aSplitedList ){ aSplitedList[['features']]}
+
 
 
 
@@ -158,6 +163,31 @@ svmModel <- function( training_set, Kernel, Weights){
       probability = T, 
       cachesize = 10000)
 }
+
+
+
+
+normalize <- function(x) {return ((x - min(x)) / (max(x) - min(x)))}
+
+
+
+
+normalizeMatrix <- function(x){
+  colsToBeFactorized = c('chr', 'strand', 'label')
+  colsToBeNormalized <- colnames(x)[!colnames(x) %in% colsToBeFactorized ]
+  x[colsToBeNormalized] = lapply(x[colsToBeNormalized], normalize)
+  return(x) }
+
+
+
+
+### only for visualization purpose
+MakeFeatureDf <- function(featureName){
+  df = rbind(data.frame(feature=trueExported_AllRFwrongPredict[,featureName], name ='allWrong'), 
+             data.frame(feature=trueExported_AllRFcorrectPredict[,featureName] ,name= 'allCorrect'))
+  return(df)}
+
+
 
 
 
@@ -214,4 +244,28 @@ draw_confusion_matrix <- function(cm, ModelName ,
   text(70, 35, names(cm$overall[2]), cex=1.5, font=2)
   text(70, 20, round(as.numeric(cm$overall[2]), 3), cex=1.4)
 }  
+
+
+
+ComputeDEbyLimma <- function(labels, data){
+  
+  gr <- factor(labels)
+  TransposedData <- t(data)
+  
+  #### limma
+  data$description <- gr
+  design <- model.matrix( ~description + 0, data)
+  colnames(design) <- levels(gr)
+  
+  ## fit a linear model 
+  fit <- lmFit(TransposedData, design)
+  cont.matrix <- makeContrasts(YES-NO, levels = design)
+  
+  fit2 <- contrasts.fit(fit, cont.matrix)
+  
+  fit2 <- eBayes(fit2, 0.01) ## prior knowledge: fraction of genes to have significant difference in expression
+  dif <- topTable(fit2, adjust='fdr', sort.by = 'B', number = Inf) 
+  
+  return( dif[order(as.numeric(dif$logFC), decreasing = T), ] )
+}
 
