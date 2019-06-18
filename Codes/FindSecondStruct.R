@@ -98,14 +98,23 @@ RNAstructColNames <- sapply(RNAstructColNames, RefineSecondStructColNames, simpl
 colnames(RNAsecondaryStructFeatures) <- RNAstructColNames
 
 
-write.csv(RNAsecondaryStructFeatures, 'Data/SecondStructFeatures_LenFilter.csv',row.names = T,col.names = T)
+#write.csv(RNAsecondaryStructFeatures, 'Data/SecondStructFeatures_LenFilter.csv',row.names = T,col.names = T)
+RNAsecondaryStructFeatures <- read.csv('Data/SecondStructFeatures_LenFilter.csv', stringsAsFactors = F)
+dim(RNAsecondaryStructFeatures)
 
-TotalMatrixWithStruct <- cbind(TotalMatrix, RNAsecondaryStructFeatures)
-dim(TotalMatrixWithStruct)
+
+
+
+
+### merging the k-mer design matrix(filtered based on min-length=18) with secondary structures 
+TotalMatrixWithStruct <- merge(TotalMatrix, RNAsecondaryStructFeatures, by.x='id',by.y='X',all.x=T)
 write.csv(TotalMatrixWithStruct, 'Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',row.names = T,col.names = T)
 
 
 
+
+
+## Additional notes for future
 ###################
 # RNA binding proteins:
 
