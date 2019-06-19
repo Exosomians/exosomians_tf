@@ -115,12 +115,7 @@ def specificity(y_true, y_pred):
 def exo_mlp(num_features):
     mlp_input = Input(shape=(num_features,))
 
-    dense = Dense(512, activation='linear', kernel_regularizer=l1(lambda_value))(mlp_input)
-    dense = BatchNormalization()(dense)
-    dense = LeakyReLU()(dense)
-    dense = Dropout(dropout_rate)(dense)
-
-    dense = Dense(128, activation='linear', kernel_regularizer=l2(lambda_value))(dense)
+    dense = Dense(128, activation='linear', kernel_regularizer=l2(lambda_value))(mlp_input)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
