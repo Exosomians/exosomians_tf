@@ -1,11 +1,11 @@
 ## 7_exoCnn_subset
 ## includes only the independent features
 
-
 import argparse
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, CSVLogger
 from keras.layers import Conv1D, Dense, Flatten, Input, MaxPooling1D, BatchNormalization, Dropout, LeakyReLU
@@ -112,6 +112,15 @@ def specificity(y_true, y_pred):
     return true_negatives / (possible_negatives + K.epsilon())
 
 
+def focal_loss(y_true, y_pred):
+    gamma = 2.0
+    alpha = 0.25
+    pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
+        (1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
+
+
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
 
@@ -150,7 +159,7 @@ def cnn(seq_len, onehot_len):
     output = Dense(1, activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
-    model.compile(optimizer=Adam(lr=learning_rate), loss='binary_crossentropy',
+    model.compile(optimizer=Adam(lr=learning_rate), loss=focal_loss,
                   metrics=['acc', sensitivity, specificity])
     model.summary()
     return model
