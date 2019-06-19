@@ -122,17 +122,17 @@ def specificity(y_true, y_pred):
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
 
-    conv = Conv1D(filters=16, kernel_size=8, padding='same', kernel_regularizer=l2(lambda_value))(cnn_input)
+    conv = Conv1D(filters=8, kernel_size=8, padding='same', kernel_regularizer=l2(lambda_value))(cnn_input)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=32, kernel_size=5, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=16, kernel_size=5, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=32, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
@@ -141,18 +141,7 @@ def cnn(seq_len, onehot_len):
     lstm = LeakyReLU()(lstm)
 
 
-
-    dense = Dense(512, kernel_regularizer=l2(lambda_value))(lstm)
-    dense = BatchNormalization()(dense)
-    dense = LeakyReLU()(dense)
-    dense = Dropout(dropout_rate)(dense)
-
-    dense = Dense(128, kernel_regularizer=l2(lambda_value))(dense)
-    dense = BatchNormalization()(dense)
-    dense = LeakyReLU()(dense)
-    dense = Dropout(dropout_rate)(dense)
-
-    dense = Dense(32, kernel_regularizer=l2(lambda_value))(dense)
+    dense = Dense(128, kernel_regularizer=l2(lambda_value))(lstm)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
