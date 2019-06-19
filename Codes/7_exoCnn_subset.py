@@ -165,7 +165,7 @@ merged_sequences_yes = merged_sequences[labels == 1]
 labels_no = labels[labels == 0]
 labels_yes = labels[labels == 1]
 
-random_indices = np.random.choice(merged_sequences.shape[0], subsample_size, replace=True)
+random_indices = np.random.choice(merged_sequences_no.shape[0], subsample_size, replace=True)
 merged_sequences_no = merged_sequences_no[random_indices]
 labels_no = labels_no[random_indices]
 
