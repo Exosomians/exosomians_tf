@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from keras import backend as K
-from keras.callbacks import EarlyStopping, CSVLogger
+from keras.callbacks import EarlyStopping, CSVLogger, LearningRateScheduler
 from keras.layers import Conv1D, Dense, Flatten, Input, MaxPooling1D, BatchNormalization, Dropout, LeakyReLU
 from keras.models import Model
 from keras.optimizers import Adam
@@ -175,7 +175,7 @@ print(x_test.shape, y_test.shape)
 
 early_stopping = EarlyStopping(patience=patience, monitor='val_loss', mode='min')
 csv_logger = CSVLogger(filename="./" + model_name + "_train.log")
-
+lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (1.0 - epoch / epochs))
 model.fit(x=x_train,
           y=y_train,
           validation_data=(x_test, y_test),
@@ -183,7 +183,7 @@ model.fit(x=x_train,
           batch_size=batch_size,
           class_weight={0: 10.0 - weight, 1: weight},
           verbose=2,
-          callbacks=[early_stopping, csv_logger],
+          callbacks=[early_stopping, csv_logger, lr_scheduler],
           shuffle=True)
 
 model.save("./" + model_name + ".h5")
