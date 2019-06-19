@@ -164,7 +164,7 @@ def cnn(seq_len, onehot_len):
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
 
-    output = Dense(1, bias_initializer=keras.initializers.Constant(-math.log((1 - math.pi) / math.pi)),
+    output = Dense(1, bias_initializer=keras.initializers.Constant(10),
                    activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
