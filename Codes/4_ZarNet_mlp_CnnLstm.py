@@ -13,6 +13,7 @@ from keras.models import Model
 from keras.optimizers import Adam, Nadam
 from keras.preprocessing.sequence import pad_sequences
 from keras.regularizers import l2, l1
+from keras.utils import multi_gpu_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, normalize
 from matplotlib import pyplot as plt
@@ -214,7 +215,9 @@ def zarnet(seq_len, n_mlp_features, onehot_len):
     return model
 
 model = zarnet(max_len, mlp_data.shape[1], merged_sequences.shape[2])
-
+#gpu_model = multi_gpu_model(model, gpus=4)
+#gpu_model.compile(optimizer=Nadam(lr=learning_rate), loss='binary_crossentropy',
+#                  metrics=['acc', sensitivity, specificity])
 
 # Train/Test split
 x1_train, x1_test, x2_train, x2_test, y_train, y_test = train_test_split(merged_sequences, mlp_data, labels,
@@ -233,7 +236,7 @@ model.fit(x=[x1_train, x2_train],
           validation_data=([x1_test, x2_test], y_test),
           epochs=epochs,
           batch_size=batch_size,
-          class_weight={0: 1.0 - weight, 1: weight},
+          class_weight={0: 10.0 - weight, 1: weight},
           verbose=2,
           callbacks=[early_stopping, csv_logger],
           shuffle=True)

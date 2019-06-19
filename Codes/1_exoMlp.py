@@ -85,7 +85,6 @@ def preprocess_mlp(data):
 
     return pd.concat([data['chr'], data['strand'], count_features_df], axis=1)
 
-data.drop(string_features, axis=1, inplace=True)
 mlp_data = preprocess_mlp(data.drop(['label'], axis=1))
 
 
@@ -146,7 +145,7 @@ model = exo_mlp(mlp_data.shape[1])
 
 
 # Train/Test Split
-x_train, x_test, y_train, y_test = train_test_split(merged_sequences, labels, test_size=testsize, stratify=data[["label"]])
+x_train, x_test, y_train, y_test = train_test_split(mlp_data.values, labels, test_size=testsize, stratify=data[["label"]])
 print(x_train.shape, y_train.shape)
 print(x_test.shape, y_test.shape)
 
@@ -158,7 +157,7 @@ model.fit(x=x_train,
           validation_data=(x_test, y_test),
           epochs=epochs,
           batch_size=batch_size,
-          class_weight={0: 1.0 - weight, 1: weight},
+          class_weight={0: 10.0 - weight, 1: weight},
           verbose=2,
           callbacks=[early_stopping, csv_logger],
           shuffle=True)
