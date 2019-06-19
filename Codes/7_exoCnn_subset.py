@@ -114,7 +114,7 @@ def specificity(y_true, y_pred):
 
 def focal_loss(y_true, y_pred):
     gamma = 2.0
-    alpha = 0.25
+    alpha = 0.5
     pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
     pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
     return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
