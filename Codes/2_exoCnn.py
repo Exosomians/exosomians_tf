@@ -5,6 +5,7 @@
 import argparse
 import math
 
+import keras
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -163,7 +164,8 @@ def cnn(seq_len, onehot_len):
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
 
-    output = Dense(1, bias_initializer=-math.log((1 - math.pi) / math.pi), activation='sigmoid')(dense)
+    output = Dense(1, bias_initializer=keras.initializers.Constant(-math.log((1 - math.pi) / math.pi)),
+                   activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
     model.compile(optimizer=Adam(lr=learning_rate), loss='binary_crossentropy',
