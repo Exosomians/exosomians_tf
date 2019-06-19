@@ -152,23 +152,8 @@ def zarnet(seq_len, n_mlp_features, onehot_len):
     mlp_input = Input(shape=(n_mlp_features,))
 
     def cnn(sequences):
-        conv = Conv1D(filters=8, kernel_size=8, activation='linear', padding='same',
+        conv = Conv1D(filters=32, kernel_size=8, activation='linear', padding='same',
                       kernel_regularizer=l2(lambda_value))(sequences)
-        conv = LeakyReLU()(conv)
-        max_pool = MaxPooling1D(pool_size=2)(conv)
-
-        conv = Conv1D(filters=16, kernel_size=5, activation='linear', padding='same',
-                      kernel_regularizer=l2(lambda_value))(max_pool)
-        conv = LeakyReLU()(conv)
-        max_pool = MaxPooling1D(pool_size=2)(conv)
-
-        conv = Conv1D(filters=16, kernel_size=3, activation='linear', padding='same',
-                      kernel_regularizer=l2(lambda_value))(max_pool)
-        conv = LeakyReLU()(conv)
-        max_pool = MaxPooling1D(pool_size=2)(conv)
-
-        conv = Conv1D(filters=16, kernel_size=3, activation='linear', padding='same',
-                      kernel_regularizer=l2(lambda_value))(max_pool)
         conv = LeakyReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
@@ -177,7 +162,7 @@ def zarnet(seq_len, n_mlp_features, onehot_len):
 
 
     def mlp(mlp_input):
-        dense = Dense(128, activation='linear', kernel_regularizer=l1(lambda_value))(mlp_input)
+        dense = Dense(64, activation='linear', kernel_regularizer=l1(lambda_value))(mlp_input)
         dense = BatchNormalization()(dense)
         dense = LeakyReLU()(dense)
         dense = Dropout(dropout_rate)(dense)
@@ -185,7 +170,7 @@ def zarnet(seq_len, n_mlp_features, onehot_len):
 
     dense = concatenate([cnn(sequences), mlp(mlp_input)], axis=1)
 
-    dense = Dense(128, activation='linear', kernel_regularizer=l2(lambda_value))(dense)
+    dense = Dense(32, activation='linear', kernel_regularizer=l2(lambda_value))(dense)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
