@@ -6,6 +6,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, CSVLogger
 from keras.layers import Conv1D, Dense, Flatten, Input, MaxPooling1D, BatchNormalization, Dropout, LeakyReLU
@@ -33,6 +34,8 @@ arguments_group.add_argument('-d', '--dropout_rate', type=float, default=0.4, re
                              help='Dropout rate')
 arguments_group.add_argument('-w', '--weight', type=float, default=0.1, required=False,
                              help='class weight for Label 1')
+arguments_group.add_argument('-g', '--gamma', type=float, default=5.0, required=False,
+                             help='Focal Loss - Gamma')
 
 args = vars(parser.parse_args())
 
@@ -44,6 +47,7 @@ patience = args['patience']
 batch_size = args['batch_size']
 epochs = args['epochs']
 weight = args['weight']
+gamma = args['gamma']
 
 ## loading data and initial preprocessing
 data = pd.read_csv("../Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv")
@@ -110,6 +114,12 @@ def specificity(y_true, y_pred):
     possible_negatives = K.sum(K.round(K.clip(1 - y_true, 0, 1)))
     return true_negatives / (possible_negatives + K.epsilon())
 
+def focal_loss(y_true, y_pred):
+    alpha = 0.5
+    pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
+        (1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
 
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
