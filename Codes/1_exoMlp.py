@@ -1,8 +1,6 @@
 ## 1_exoMLP
 ## includes only the independent features
 
-
-
 import argparse
 
 import numpy as np
@@ -158,6 +156,8 @@ model.fit(x=x_train,
           shuffle=True)
 
 model.save("./"+model_name+".h5")
+
+
 
 
 def visualize_results():
