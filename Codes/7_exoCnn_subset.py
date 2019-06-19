@@ -174,7 +174,7 @@ labels = np.concatenate([labels_no, labels_yes], axis=0)
 
 # Train/Test Split
 x_train, x_test, y_train, y_test = train_test_split(merged_sequences, labels, test_size=testsize,
-                                                    stratify=data[["label"]])
+                                                    stratify=labels)
 print(x_train.shape, y_train.shape)
 print(x_test.shape, y_test.shape)
 
