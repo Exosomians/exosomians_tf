@@ -136,7 +136,7 @@ def cnn(seq_len, onehot_len):
 
     flat = Flatten()(max_pool)
 
-    dense = Dense(128, kernel_regularizer=l2(lambda_value))(flats)
+    dense = Dense(128, kernel_regularizer=l2(lambda_value))(flat)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
