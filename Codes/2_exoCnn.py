@@ -3,6 +3,7 @@
 
 
 import argparse
+import math
 
 import numpy as np
 import pandas as pd
@@ -114,6 +115,7 @@ def specificity(y_true, y_pred):
     possible_negatives = K.sum(K.round(K.clip(1 - y_true, 0, 1)))
     return true_negatives / (possible_negatives + K.epsilon())
 
+
 def focal_loss(y_true, y_pred):
     alpha = 0.5
     pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
@@ -121,42 +123,47 @@ def focal_loss(y_true, y_pred):
     return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
         (1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
 
+
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
 
-    conv = Conv1D(filters=8, kernel_size=8, padding='same', kernel_regularizer=l2(lambda_value))(cnn_input)
+    conv = Conv1D(filters=8, kernel_size=8, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(cnn_input)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=5, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=16, kernel_size=5, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
     flat = Flatten()(max_pool)
 
-    dense = Dense(128, kernel_regularizer=l2(lambda_value))(flat)
+    dense = Dense(128, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False, )(flat)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
 
-    dense = Dense(32, kernel_regularizer=l2(lambda_value))(dense)
+    dense = Dense(32, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False)(dense)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
 
-    output = Dense(1, activation='sigmoid')(dense)
+    output = Dense(1, bias_initializer=-math.log((1 - math.pi) / math.pi), activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
     model.compile(optimizer=Adam(lr=learning_rate), loss='binary_crossentropy',
