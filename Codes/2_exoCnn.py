@@ -171,7 +171,7 @@ def cnn(seq_len, onehot_len):
                    activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
-    model.compile(optimizer=Adam(lr=learning_rate), loss='binary_crossentropy',
+    model.compile(optimizer=Adam(lr=learning_rate), loss=focal_loss,
                   metrics=['acc', sensitivity, specificity])
     model.summary()
     return model
