@@ -130,25 +130,25 @@ def focal_loss(y_true, y_pred):
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
 
-    conv = Conv1D(filters=8, kernel_size=8, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
                   kernel_regularizer=l2(lambda_value))(cnn_input)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=5, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
                   kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
                   kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
                   kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
@@ -156,12 +156,7 @@ def cnn(seq_len, onehot_len):
 
     flat = Flatten()(max_pool)
 
-    dense = Dense(128, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False, )(flat)
-    dense = BatchNormalization()(dense)
-    dense = LeakyReLU()(dense)
-    dense = Dropout(dropout_rate)(dense)
-
-    dense = Dense(32, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False)(dense)
+    dense = Dense(32, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False)(flat)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
