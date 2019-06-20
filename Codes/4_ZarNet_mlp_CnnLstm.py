@@ -35,7 +35,7 @@ arguments_group.add_argument('-p', '--patience', type=int, default=100, required
                              help='Patience of EarlyStopping')
 arguments_group.add_argument('-d', '--dropout_rate', type=float, default=0.4, required=False,
                              help='Dropout rate')
-arguments_group.add_argument('-w', '--weight', type=float, default=0.1, required=False,
+arguments_group.add_argument('-w', '--weight', type=float, default=9.0, required=False,
                              help='class weight for Label 1')
 
 

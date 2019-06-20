@@ -34,7 +34,7 @@ arguments_group.add_argument('-p', '--patience', type=int, default=100, required
                              help='Patience of EarlyStopping')
 arguments_group.add_argument('-d', '--dropout_rate', type=float, default=0.4, required=False,
                              help='Dropout rate')
-arguments_group.add_argument('-w', '--weight', type=float, default=0.1, required=False,
+arguments_group.add_argument('-w', '--weight', type=float, default=9.0, required=False,
                              help='class weight for Label 1')
 
 
@@ -154,7 +154,7 @@ model.fit(x=x_train,
           validation_data=(x_test, y_test),
           epochs=epochs,
           batch_size=batch_size,
-          class_weight={0: 1.0 - weight, 1: weight},
+          class_weight={0: 10.0 - weight, 1: weight},
           verbose=2,
           callbacks=[early_stopping, csv_logger],
           shuffle=True)
