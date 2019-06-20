@@ -3,11 +3,14 @@
 
 
 import argparse
+import math
 
+import keras
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from keras import backend as K
-from keras.callbacks import EarlyStopping, CSVLogger
+from keras.callbacks import EarlyStopping, CSVLogger, LearningRateScheduler
 from keras.layers import Conv1D, Dense, Flatten, Input, MaxPooling1D, BatchNormalization, Dropout, LeakyReLU
 from keras.models import Model
 from keras.optimizers import Adam
@@ -33,6 +36,10 @@ arguments_group.add_argument('-d', '--dropout_rate', type=float, default=0.4, re
                              help='Dropout rate')
 arguments_group.add_argument('-w', '--weight', type=float, default=0.1, required=False,
                              help='class weight for Label 1')
+arguments_group.add_argument('-a', '--alpha', type=float, default=0.5, required=False,
+                             help='Focal Loss - Alpha')
+arguments_group.add_argument('-g', '--gamma', type=float, default=5.0, required=False,
+                             help='Focal Loss - Gamma')
 
 args = vars(parser.parse_args())
 
@@ -44,6 +51,8 @@ patience = args['patience']
 batch_size = args['batch_size']
 epochs = args['epochs']
 weight = args['weight']
+gamma = args['gamma']
+alpha = args['alpha']
 
 ## loading data and initial preprocessing
 data = pd.read_csv("../Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv")
@@ -111,45 +120,53 @@ def specificity(y_true, y_pred):
     return true_negatives / (possible_negatives + K.epsilon())
 
 
+def focal_loss(y_true, y_pred):
+    pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
+        (1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
+
+
 def cnn(seq_len, onehot_len):
     cnn_input = Input(shape=(seq_len, onehot_len,))
 
-    conv = Conv1D(filters=8, kernel_size=8, padding='same', kernel_regularizer=l2(lambda_value))(cnn_input)
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(cnn_input)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=5, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
-    conv = Conv1D(filters=16, kernel_size=3, padding='same', kernel_regularizer=l2(lambda_value))(max_pool)
+    conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer='glorot_normal', use_bias=False,
+                  kernel_regularizer=l2(lambda_value))(max_pool)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     max_pool = MaxPooling1D(pool_size=2)(conv)
 
     flat = Flatten()(max_pool)
 
-    dense = Dense(128, kernel_regularizer=l2(lambda_value))(flat)
+    dense = Dense(32, kernel_initializer='glorot_normal', kernel_regularizer=l2(lambda_value), use_bias=False)(flat)
     dense = BatchNormalization()(dense)
     dense = LeakyReLU()(dense)
     dense = Dropout(dropout_rate)(dense)
 
-    dense = Dense(32, kernel_regularizer=l2(lambda_value))(dense)
-    dense = BatchNormalization()(dense)
-    dense = LeakyReLU()(dense)
-    dense = Dropout(dropout_rate)(dense)
-
-    output = Dense(1, activation='sigmoid')(dense)
+    output = Dense(1, kernel_initializer='glorot_normal',
+                   bias_initializer=keras.initializers.Constant(-math.log((1 - 0.01) / 0.01)),
+                   activation='sigmoid')(dense)
 
     model = Model(inputs=cnn_input, outputs=output)
-    model.compile(optimizer=Adam(lr=learning_rate), loss='binary_crossentropy',
+    model.compile(optimizer=Adam(lr=learning_rate), loss=focal_loss,
                   metrics=['acc', sensitivity, specificity])
     model.summary()
     return model
@@ -165,7 +182,7 @@ print(x_test.shape, y_test.shape)
 
 early_stopping = EarlyStopping(patience=patience, monitor='val_loss', mode='min')
 csv_logger = CSVLogger(filename="./" + model_name + "_train.log")
-
+lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (1.0 - 0.1 * (epoch / epochs)))
 model.fit(x=x_train,
           y=y_train,
           validation_data=(x_test, y_test),
@@ -173,7 +190,7 @@ model.fit(x=x_train,
           batch_size=batch_size,
           class_weight={0: 10.0 - weight, 1: weight},
           verbose=2,
-          callbacks=[early_stopping, csv_logger],
+          callbacks=[early_stopping, csv_logger, lr_scheduler],
           shuffle=True)
 
 model.save("./" + model_name + ".h5")
