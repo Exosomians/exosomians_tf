@@ -36,6 +36,8 @@ arguments_group.add_argument('-d', '--dropout_rate', type=float, default=0.4, re
                              help='Dropout rate')
 arguments_group.add_argument('-w', '--weight', type=float, default=0.1, required=False,
                              help='class weight for Label 1')
+arguments_group.add_argument('-a', '--alpha', type=float, default=0.5, required=False,
+                             help='Focal Loss - Alpha')
 arguments_group.add_argument('-g', '--gamma', type=float, default=5.0, required=False,
                              help='Focal Loss - Gamma')
 
@@ -50,6 +52,7 @@ batch_size = args['batch_size']
 epochs = args['epochs']
 weight = args['weight']
 gamma = args['gamma']
+alpha = args['alpha']
 
 ## loading data and initial preprocessing
 data = pd.read_csv("../Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv")
@@ -118,7 +121,6 @@ def specificity(y_true, y_pred):
 
 
 def focal_loss(y_true, y_pred):
-    alpha = 0.5
     pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
     pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
     return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) - K.sum(
