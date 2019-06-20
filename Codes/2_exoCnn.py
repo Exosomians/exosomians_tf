@@ -185,7 +185,7 @@ print(x_test.shape, y_test.shape)
 
 early_stopping = EarlyStopping(patience=patience, monitor='val_loss', mode='min')
 csv_logger = CSVLogger(filename="./" + model_name + "_train.log")
-lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (1.0 - epoch / epochs))
+lr_scheduler = LearningRateScheduler(lambda epoch, lr: lr * (1.0 - 0.1 * (epoch / epochs)))
 model.fit(x=x_train,
           y=y_train,
           validation_data=(x_test, y_test),
