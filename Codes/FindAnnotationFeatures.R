@@ -35,7 +35,6 @@ write.csv(cbind(data, annotation_features),'Data/MergedDesignMatLabel_SecondStru
 
 
 
-
 .getLongestMotif <- function(String, motif){
   i = 0 
   max_hairpin = 0 
@@ -55,4 +54,5 @@ write.csv(cbind(data, annotation_features),'Data/MergedDesignMatLabel_SecondStru
   }
   return(max_hairpin)
 }
+
 

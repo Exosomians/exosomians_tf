@@ -132,7 +132,3 @@ p.svm_paired = p.svm_paired + labs(
 # grid.arrange(p.svm_len, p.svm_ev, p.svm_ic, p.svm_unpaired, p.svm_paired, nrow=3, ncol=2)
 # dev.off()
 
-
-
-
-
