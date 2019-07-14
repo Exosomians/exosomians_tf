@@ -246,26 +246,21 @@ draw_confusion_matrix <- function(cm, ModelName ,
 }  
 
 
-
-ComputeDEbyLimma <- function(labels, data){
-  
-  gr <- factor(labels)
-  TransposedData <- t(data)
-  
-  #### limma
-  data$description <- gr
-  design <- model.matrix( ~description + 0, data)
-  colnames(design) <- levels(gr)
-  
-  ## fit a linear model 
-  fit <- lmFit(TransposedData, design)
-  cont.matrix <- makeContrasts(YES-NO, levels = design)
-  
-  fit2 <- contrasts.fit(fit, cont.matrix)
-  
-  fit2 <- eBayes(fit2, 0.01) ## prior knowledge: fraction of genes to have significant difference in expression
-  dif <- topTable(fit2, adjust='fdr', sort.by = 'B', number = Inf) 
-  
-  return( dif[order(as.numeric(dif$logFC), decreasing = T), ] )
+FeatureSelectionLibs <- function(){
+  library(mlbench)
+  library(caret)
+  library(party)
+  library(readr)
+  library(Rtsne)
+  library(umap)
+  library(MASS)    
+  library(FSelector)
+  library(earth)
+  library(mlr)
+  library(randomForest)
+  library(Boruta)
+  library(relaimpo)
+  library(devtools)
+  library(InformationValue)
 }
 
