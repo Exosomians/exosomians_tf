@@ -100,7 +100,15 @@ head(designMat)
 head(numerical_designMat_norm)
 
 
+pdf('all_initial_features.pdf')
+.checkFeatureByPCA(subset(numerical_designMat, select=-label), designMat)
+.checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
+.checkFeatureByUMAP(subset(numerical_designMat, select=-label), designMat)
 
+.checkFeatureByPCA(subset(numerical_designMat_norm, select=-label), designMat)
+.checkFeatureBytSNE(subset(numerical_designMat_norm, select=-label), designMat)
+.checkFeatureByUMAP(subset(numerical_designMat_norm, select=-label), designMat)
+dev.off()
 
 ##########################################
 ### Correlation
@@ -140,20 +148,24 @@ numerical_designMat_norm <- numerical_designMat_norm[,!colnames(numerical_design
 
 
 
+## all features together
+pdf('uncor_features.pdf')
+.checkFeatureByPCA(subset(numerical_designMat, select=-label), designMat)
+.checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
+.checkFeatureByUMAP(subset(numerical_designMat, select=-label), designMat)
+
+
 ##########################################
 #### DE approach
 Dif_features <- .ComputeDEbyLimma(designMat$label, subset(numerical_designMat, select=-label))
+saveRDS(Dif_features, 'DifExpFeatures.rds')
 DE_features <- rownames(subset(Dif_features, logFC > 2 | logFC < (-2)))
 
 onlyDEincluded <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% DE_features ]
 .checkFeatureByPCA(onlyDEincluded, designMat)
 .checkFeatureBytSNE(onlyDEincluded, designMat)
 .checkFeatureByUMAP(onlyDEincluded, designMat)
-
-## all features together
-.checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
-
-
+dev.off()
 
 
 ##########################################
@@ -166,9 +178,9 @@ pvalues <- lapply(subset(numerical_designMat, select=-label),
          t_test_res = t.test(x, numerical_designMat$label); t_test_res$p.value})
 
 pvalues <- do.call(rbind, pvalues)
-sum(pvalues>0.01)
-colnames(numerical_designMat)[which((pvalues>0.01))]
-### only three features where excluded -> not a discriminative approach
+sum(pvalues>0.001)
+colnames(numerical_designMat)[which((pvalues>0.001))]
+### only one features was excluded -> not a discriminative approach  "D00340.003"
 
 
 ## chi-square for categorical features
@@ -182,7 +194,7 @@ colnames(numerical_designMat)[which((pvalues>0.01))]
 strand_pvalue <- .selectBychiSq(designMat$strand, designMat$label)
 chr_pvalue <- .selectBychiSq(designMat$chr, designMat$label)
 
-## 'chr' is more predictive than 'strand'
+## null-hypothesis is rejected for both. 'chr' is more predictive than 'strand'
 
 
 
@@ -224,6 +236,17 @@ imp_features_norm <- infor_gain$feature[infor_gain$attr_importance > quantile(in
 intersect(imp_features_raw,imp_features_norm )
 
 
+pdf('info_gain_features.pdf')
+infor_gain_features <- designMat[,as.character(colnames(designMat)) %in% imp_features_raw ]
+.checkFeatureByPCA(infor_gain_features, designMat)
+.checkFeatureBytSNE(infor_gain_features, designMat)
+.checkFeatureByUMAP(infor_gain_features, designMat)
+
+infor_gain_features_norm <- designMat[,as.character(colnames(designMat)) %in% imp_features_norm ]
+.checkFeatureByPCA(infor_gain_features_norm, designMat)
+.checkFeatureBytSNE(infor_gain_features_norm, designMat)
+.checkFeatureByUMAP(infor_gain_features_norm, designMat)
+dev.off()
 
 
 ##########################################
@@ -239,9 +262,15 @@ GCV_imp <- rownames(ev)
 
 marsModel <- earth(label ~ ., data=numerical_designMat_norm) 
 ev_norm <- evimp (marsModel) 
-GCV_imp_norm <- rownames(ev)
+GCV_imp_norm <- rownames(ev)  ## exactly the same as raw-input 
 
 
+pdf('GCV_features.pdf')
+GCV_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% GCV_imp ]
+.checkFeatureByPCA(GCV_features, designMat)
+.checkFeatureBytSNE(GCV_features, designMat)
+.checkFeatureByUMAP(GCV_features, designMat)
+dev.off()
 
 
 ########################################## time
@@ -259,15 +288,15 @@ task <- makeClassifTask(data = cbind(subset(numerical_designMat,select=-label),l
                        target = 'label')
 
 res <- selectFeatures("classif.rpart", task, rdesc, control = ctrl)
-saveRDS(res, 'forwardSel.rds' )
-analyzeFeatSelResult(res)  ### only selected feature:  D00120.001
+res <- readRDS('forwardSel.rds' )
+analyzeFeatSelResult(res)  ### only selected feature:  D00120.001 = MBNL1(RBP, Znf)
 
 
 data_norm <- cbind(subset(numerical_designMat_norm,select=-label),label=designMat$label)
 task_norm <- makeClassifTask(data = data_norm, target = 'label')
 res_norm <- selectFeatures("classif.rpart", task_norm, rdesc, control = ctrl)
-saveRDS(res_norm, 'forwardSel_norm.rds' )
-
+res_norm <- readRDS('forwardSel_norm.rds' )  ## only selected feature: GCGC
+analyzeFeatSelResult(res_norm) 
 
 
 ##########################################  time !!!!
@@ -276,6 +305,7 @@ saveRDS(res_norm, 'forwardSel_norm.rds' )
 cf1 <- cforest(label ~ . , data= numerical_designMat_norm, control=cforest_unbiased(mtry=2,ntree=50)) 
 varImpRF <- varimp(cf1) # var imp based on mean decrease in accuracy
 saveRDS(varImpRF, 'varImpRF.rds')
+## DON'T RUN the next line in the future. extremely time consuming. not much informative
 varImpRF_adj <- varimp(cf1, conditional=TRUE)  # conditional=True, adjusts for correlations between predictors 
 saveRDS(varImpRF_adj, 'varImpRF_adj.rds')
 
@@ -285,7 +315,7 @@ saveRDS(varImpRF_adj, 'varImpRF_adj.rds')
 ### Boruta 
 
 boruta_output <- Boruta(label ~ ., data=na.omit(numerical_designMat_norm), doTrace=2)  # perform Boruta search
-saveRDS(boruta_output, 'boruta_output.rds')
+boruta_output <- readRDS('boruta_output.rds')
 boruta_signif <- names(boruta_output$finalDecision[boruta_output$finalDecision %in% c("Confirmed", "Tentative")]) 
 boruta_signif  # significant variables
 rejected_features <- names(boruta_output$finalDecision)[boruta_output$finalDecision != 'Confirmed'] ## rejected variables
@@ -295,16 +325,33 @@ boruta_impHist  <- boruta_output$ImpHistory
 boruta_impHist <- subset(boruta_impHist, select=-c(shadowMax,shadowMean, shadowMin))
 boruta_mean <- sapply(1:ncol(boruta_impHist), function(i) mean(boruta_impHist[i]))
 
-hist(boruta_means)
-summary(boruta_means)
+hist(boruta_mean)
+summary(boruta_mean)
 
-CUT_OFF = 20 
-imp_index <- sapply(1:ncol(boruta_impHist), function(i) mean(boruta_imp[i])>CUT_OFF)
+CUT_OFF = quantile(boruta_mean, 0.75)
+imp_index <- sapply(1:ncol(boruta_impHist), function(i) mean(boruta_impHist[i])>CUT_OFF)
 imp_features <- colnames(boruta_impHist)[unlist(imp_index)]
-boxplot(boruta_impHist[,imp_features])
+imp_features <- imp_features[imp_features %in% boruta_signif & !imp_features %in% rejected_features]
+boruta.df <- data.frame(boruta_impHist[,imp_features])
+boruta.df <- melt(boruta.df)
+p = ggplot(boruta.df, aes(x=variable,y=value))+geom_violin(aes(fill=variable))+
+  coord_flip()+theme_bw()+ggtitle('upper 85% based on Boruta scores')
+p
 
 
 
+
+pdf('Boruta_features.pdf')
+Boruta_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% imp_features ]
+.checkFeatureByPCA(Boruta_features, designMat)
+.checkFeatureBytSNE(Boruta_features, designMat)
+.checkFeatureByUMAP(Boruta_features, designMat)
+
+Boruta_features_norm <- numerical_designMat_norm[,as.character(colnames(numerical_designMat)) %in% imp_features ]
+.checkFeatureByPCA(Boruta_features_norm, designMat)
+.checkFeatureBytSNE(Boruta_features_norm, designMat)
+.checkFeatureByUMAP(Boruta_features_norm, designMat)
+dev.off()
 
 ########################################## time !!!
 ### Relative Importance  
@@ -326,9 +373,6 @@ inTrain <- createDataPartition(y = numerical_designMat[,'label'],
 training <- numerical_designMat[ inTrain,]
 testing <- numerical_designMat[-inTrain,]
 
-training$label <- ifelse(training$label==1, 'YES', 'NO')
-testing$label <- ifelse(testing$label==1, 'YES', 'NO')
-
 
 # Setting the cross validation parameters
 ctrl_param <- rfeControl(functions = rfFuncs,
@@ -337,7 +381,7 @@ ctrl_param <- rfeControl(functions = rfFuncs,
                          verbose = FALSE,
                          returnResamp = "all")
 
-rfe_lm_profile <- rfe(training[, colnames(training)!='label'], training$label, #
+rfe_lm_profile <- rfe(training[, colnames(training)!='label'], training$label, 
                       sizes = c(1:20),
                       rfeControl = ctrl_param,
                       newdata = testing[, colnames(testing)!='label'])
