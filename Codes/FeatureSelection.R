@@ -101,7 +101,7 @@ head(numerical_designMat_norm)
 
 
 
-pdf('all_initial_features.pdf')
+pdf('Data/featureSelection/all_initial_features.pdf')
 .checkFeatureByPCA(subset(numerical_designMat, select=-label), designMat)
 .checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
 .checkFeatureByUMAP(subset(numerical_designMat, select=-label), designMat)
@@ -152,7 +152,7 @@ numerical_designMat_norm <- numerical_designMat_norm[,!colnames(numerical_design
 
 
 ## all features together
-pdf('uncor_features.pdf')
+pdf('Data/featureSelection/uncor_features.pdf')
 .checkFeatureByPCA(subset(numerical_designMat, select=-label), designMat)
 .checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
 .checkFeatureByUMAP(subset(numerical_designMat, select=-label), designMat)
@@ -163,7 +163,7 @@ pdf('uncor_features.pdf')
 #### DE approach
 
 Dif_features <- .ComputeDEbyLimma(designMat$label, subset(numerical_designMat, select=-label))
-Dif_features<-readRDS('DifExpFeatures.rds')
+Dif_features<-readRDS('Data/featureSelection/DifExpFeatures.rds')
 DE_features <- rownames(subset(Dif_features, logFC > 2 | logFC < (-2)))
 
 
@@ -242,7 +242,7 @@ imp_features_norm <- infor_gain$feature[infor_gain_norm$attr_importance > quanti
 intersect(imp_features_raw,imp_features_norm )
 
 
-pdf('info_gain_features.pdf')
+pdf('Data/featureSelection/info_gain_features.pdf')
 infor_gain_features <- designMat[,as.character(colnames(designMat)) %in% imp_features_raw ]
 .checkFeatureByPCA(infor_gain_features, designMat)
 .checkFeatureBytSNE(infor_gain_features, designMat)
@@ -271,7 +271,7 @@ ev_norm <- evimp (marsModel)
 GCV_imp_norm <- rownames(ev)  ## exactly the same as raw-input 
 
 
-pdf('GCV_features.pdf')
+pdf('Data/featureSelection/GCV_features.pdf')
 GCV_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% GCV_imp ]
 .checkFeatureByPCA(GCV_features, designMat)
 .checkFeatureBytSNE(GCV_features, designMat)
@@ -294,14 +294,14 @@ task <- makeClassifTask(data = cbind(subset(numerical_designMat,select=-label),l
                        target = 'label')
 
 res <- selectFeatures("classif.rpart", task, rdesc, control = ctrl)
-res <- readRDS('forwardSel.rds' )
+res <- readRDS('Data/featureSelection/forwardSel.rds' )
 analyzeFeatSelResult(res)  ### only selected feature:  D00120.001 = MBNL1(RBP, Znf)
 
 
 data_norm <- cbind(subset(numerical_designMat_norm,select=-label),label=designMat$label)
 task_norm <- makeClassifTask(data = data_norm, target = 'label')
 res_norm <- selectFeatures("classif.rpart", task_norm, rdesc, control = ctrl)
-res_norm <- readRDS('forwardSel_norm.rds' )  ## only selected feature: GCGC
+res_norm <- readRDS('Data/featureSelection/forwardSel_norm.rds' )  ## only selected feature: GCGC
 analyzeFeatSelResult(res_norm) 
 
 
@@ -310,7 +310,7 @@ analyzeFeatSelResult(res_norm)
 
 cf1 <- cforest(label ~ . , data= numerical_designMat_norm, control=cforest_unbiased(mtry=2,ntree=50)) 
 varImpRF <- varimp(cf1) # var imp based on mean decrease in accuracy
-varImpRF <- readRDS('varImpRF.rds')
+varImpRF <- readRDS('Data/featureSelection/varImpRF.rds')
 
 ## DON'T RUN the next line in the future. extremely time consuming
 # varImpRF_adj <- varimp(cf1, conditional=TRUE)  # conditional=True, adjusts for correlations between predictors 
@@ -324,7 +324,7 @@ rownames(data.frame(varImpRF[varImpRF>quantile(varImpRF, 0.85)]))
 ### Boruta 
 
 boruta_output <- Boruta(label ~ ., data=na.omit(numerical_designMat_norm), doTrace=2)  # perform Boruta search
-boruta_output <- readRDS('boruta_output.rds')
+boruta_output <- readRDS('Data/featureSelection/boruta_output.rds')
 boruta_signif <- names(boruta_output$finalDecision[boruta_output$finalDecision %in% c("Confirmed", "Tentative")]) 
 boruta_signif  # significant variables
 rejected_features <- names(boruta_output$finalDecision)[boruta_output$finalDecision != 'Confirmed'] ## rejected variables
@@ -351,7 +351,7 @@ p
 
 
 ## evaluate
-pdf('Boruta_features.pdf')
+pdf('Data/featureSelection/Boruta_features.pdf')
 Boruta_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% imp_features ]
 .checkFeatureByPCA(Boruta_features, designMat)
 .checkFeatureBytSNE(Boruta_features, designMat)
@@ -373,7 +373,7 @@ dev.off()
 
 lmMod <- lm(label ~ . , data = numerical_designMat_norm)  # fit lm() model
 relImportance <- calc.relimp(lmMod, type = "lmg", rela = TRUE)  # calculate relative importance scaled to 100 
-saveRDS(relImportance, 'relativeImportance.rds')
+saveRDS(relImportance, 'Data/featureSelection/relativeImportance.rds')
 sort(relImportance$lmg, decreasing=TRUE)  # relative importance
 
 
@@ -447,7 +447,7 @@ Boruta <- ifelse( all_features %in% imp_features, 1, 0)
 scoreTable <- data.frame(cbind(diffExp,InfoGain, InfoGain_norm, GCV, ForwardSel,ForwardSel_norm, RF, Boruta),
                          row.names = all_features)
 
-write.csv(scoreTable, 'featureScoreTable.csv')
+write.csv(scoreTable, 'Data/featureSelection/featureScoreTable.csv')
 scoreTable$sumScore <- rowSums(scoreTable)
 scoreTable <- scoreTable[order(scoreTable$sumScore, decreasing = T), ]
 
