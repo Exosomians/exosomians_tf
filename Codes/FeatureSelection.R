@@ -100,6 +100,7 @@ head(designMat)
 head(numerical_designMat_norm)
 
 
+
 pdf('all_initial_features.pdf')
 .checkFeatureByPCA(subset(numerical_designMat, select=-label), designMat)
 .checkFeatureBytSNE(subset(numerical_designMat, select=-label), designMat)
@@ -109,6 +110,8 @@ pdf('all_initial_features.pdf')
 .checkFeatureBytSNE(subset(numerical_designMat_norm, select=-label), designMat)
 .checkFeatureByUMAP(subset(numerical_designMat_norm, select=-label), designMat)
 dev.off()
+
+
 
 ##########################################
 ### Correlation
@@ -155,11 +158,14 @@ pdf('uncor_features.pdf')
 .checkFeatureByUMAP(subset(numerical_designMat, select=-label), designMat)
 
 
+
 ##########################################
 #### DE approach
+
 Dif_features <- .ComputeDEbyLimma(designMat$label, subset(numerical_designMat, select=-label))
-saveRDS(Dif_features, 'DifExpFeatures.rds')
+Dif_features<-readRDS('DifExpFeatures.rds')
 DE_features <- rownames(subset(Dif_features, logFC > 2 | logFC < (-2)))
+
 
 onlyDEincluded <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% DE_features ]
 .checkFeatureByPCA(onlyDEincluded, designMat)
@@ -227,11 +233,11 @@ summary(infor_gain$attr_importance)
 imp_features_raw <- infor_gain$feature[infor_gain$attr_importance > quantile(infor_gain$attr_importance, 0.85)]
 
 
-infor_gain <- information.gain(label~., designMat_norm)
-infor_gain$feature <- rownames(infor_gain)
-infor_gain[order(infor_gain$attr_importance, decreasing = T),]
-summary(infor_gain$attr_importance)
-imp_features_norm <- infor_gain$feature[infor_gain$attr_importance > quantile(infor_gain$attr_importance, 0.85)]
+infor_gain_norm <- information.gain(label~., designMat_norm)
+infor_gain_norm$feature <- rownames(infor_gain_norm)
+infor_gain_norm[order(infor_gain_norm$attr_importance, decreasing = T),]
+summary(infor_gain_norm$attr_importance)
+imp_features_norm <- infor_gain$feature[infor_gain_norm$attr_importance > quantile(infor_gain_norm$attr_importance, 0.85)]
 
 intersect(imp_features_raw,imp_features_norm )
 
@@ -304,10 +310,13 @@ analyzeFeatSelResult(res_norm)
 
 cf1 <- cforest(label ~ . , data= numerical_designMat_norm, control=cforest_unbiased(mtry=2,ntree=50)) 
 varImpRF <- varimp(cf1) # var imp based on mean decrease in accuracy
-saveRDS(varImpRF, 'varImpRF.rds')
-## DON'T RUN the next line in the future. extremely time consuming. not much informative
-varImpRF_adj <- varimp(cf1, conditional=TRUE)  # conditional=True, adjusts for correlations between predictors 
-saveRDS(varImpRF_adj, 'varImpRF_adj.rds')
+varImpRF <- readRDS('varImpRF.rds')
+
+## DON'T RUN the next line in the future. extremely time consuming
+# varImpRF_adj <- varimp(cf1, conditional=TRUE)  # conditional=True, adjusts for correlations between predictors 
+
+summary(varImpRF)
+rownames(data.frame(varImpRF[varImpRF>quantile(varImpRF, 0.85)]))
 
 
 
@@ -328,10 +337,12 @@ boruta_mean <- sapply(1:ncol(boruta_impHist), function(i) mean(boruta_impHist[i]
 hist(boruta_mean)
 summary(boruta_mean)
 
-CUT_OFF = quantile(boruta_mean, 0.75)
+CUT_OFF = quantile(boruta_mean, 0.7)
 imp_index <- sapply(1:ncol(boruta_impHist), function(i) mean(boruta_impHist[i])>CUT_OFF)
 imp_features <- colnames(boruta_impHist)[unlist(imp_index)]
 imp_features <- imp_features[imp_features %in% boruta_signif & !imp_features %in% rejected_features]
+
+## visualize important features
 boruta.df <- data.frame(boruta_impHist[,imp_features])
 boruta.df <- melt(boruta.df)
 p = ggplot(boruta.df, aes(x=variable,y=value))+geom_violin(aes(fill=variable))+
@@ -339,8 +350,7 @@ p = ggplot(boruta.df, aes(x=variable,y=value))+geom_violin(aes(fill=variable))+
 p
 
 
-
-
+## evaluate
 pdf('Boruta_features.pdf')
 Boruta_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% imp_features ]
 .checkFeatureByPCA(Boruta_features, designMat)
@@ -353,7 +363,12 @@ Boruta_features_norm <- numerical_designMat_norm[,as.character(colnames(numerica
 .checkFeatureByUMAP(Boruta_features_norm, designMat)
 dev.off()
 
-########################################## time !!!
+
+
+
+
+
+########################################## time, ram !!! Error: cannot allocate vector of size 128.3 Gb !!!!
 ### Relative Importance  
 
 lmMod <- lm(label ~ . , data = numerical_designMat_norm)  # fit lm() model
@@ -389,5 +404,64 @@ rfe_lm_profile <- rfe(training[, colnames(training)!='label'], training$label,
 saveRDS(rfe_lm_profile, 'recursiveFeatElim.rds')
 predictors(rfe_lm_profile)
 plot(rfe_lm_profile, type=c("g", "o"))
+
+
+
+
+
+
+##########################################  
+###  Ensemble scoring system
+
+all_features <- colnames(designMat)
+.scoreBasedOnQuantile <- function(Features, Scores){
+  ifelse( 
+    all_features %in% Features[Scores>quantile(Scores, 0.75)], 3,
+    ifelse(all_features %in% Features[Scores>median(Scores)], 2,
+           ifelse(all_features %in% Features[Scores>quantile(Scores,0.25)], 1,
+                  0)))
+}
+
+
+## scoring each feature based on different mothods.
+## scoring is either binary or based on the score quantiles
+
+diffExp <- ifelse( all_features %in% DE_features, 1, 0)
+
+InfoGain <- .scoreBasedOnQuantile(infor_gain$feature, infor_gain$attr_importance)
+InfoGain_norm <- .scoreBasedOnQuantile(infor_gain_norm$feature, infor_gain_norm$attr_importance)
+
+GCV <- ifelse( all_features %in% GCV_imp, 1, 0)
+
+ForwardSel <- ifelse( all_features %in% res$x, 1, 0) 
+ForwardSel_norm <- ifelse( all_features %in% res_norm$x, 1, 0) 
+
+
+varImpRF.df <- data.frame(varImpRF) #RF
+varImpRF.df$feature <- rownames(varImpRF.df)
+RF <- .scoreBasedOnQuantile(varImpRF.df$feature, varImpRF.df$varImpRF)
+
+Boruta <- ifelse( all_features %in% imp_features, 1, 0) 
+
+
+scoreTable <- data.frame(cbind(diffExp,InfoGain, InfoGain_norm, GCV, ForwardSel,ForwardSel_norm, RF, Boruta),
+                         row.names = all_features)
+
+write.csv(scoreTable, 'featureScoreTable.csv')
+scoreTable$sumScore <- rowSums(scoreTable)
+scoreTable <- scoreTable[order(scoreTable$sumScore, decreasing = T), ]
+
+summary(scoreTable$sumScore)
+hist(scoreTable$sumScore)
+
+highScoreFeat <- rownames(subset(scoreTable, sumScore>7))
+
+
+
+highScore_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% highScoreFeat ]
+.checkFeatureByPCA(highScore_features, designMat)
+.checkFeatureBytSNE(highScore_features, designMat)
+.checkFeatureByUMAP(highScore_features, designMat)
+
 
 
