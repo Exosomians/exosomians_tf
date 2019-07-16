@@ -447,21 +447,23 @@ Boruta <- ifelse( all_features %in% imp_features, 1, 0)
 scoreTable <- data.frame(cbind(diffExp,InfoGain, InfoGain_norm, GCV, ForwardSel,ForwardSel_norm, RF, Boruta),
                          row.names = all_features)
 
-write.csv(scoreTable, 'Data/featureSelection/featureScoreTable.csv')
 scoreTable$sumScore <- rowSums(scoreTable)
 scoreTable <- scoreTable[order(scoreTable$sumScore, decreasing = T), ]
+scoreTable <- read.csv('Data/featureSelection/featureScoreTable.csv')
+rownames(scoreTable) <- scoreTable$X
 
 summary(scoreTable$sumScore)
 hist(scoreTable$sumScore)
 
 highScoreFeat <- rownames(subset(scoreTable, sumScore>7))
-
-
-
 highScore_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% highScoreFeat ]
+
 .checkFeatureByPCA(highScore_features, designMat)
 .checkFeatureBytSNE(highScore_features, designMat)
 .checkFeatureByUMAP(highScore_features, designMat)
 
+highScore_features$label <- designMat$label
+head(highScore_features)
+write.csv(highScore_features, 'Data/designMat_selectedFeatures.csv')
 
 
