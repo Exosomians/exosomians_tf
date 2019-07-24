@@ -9,7 +9,7 @@
 source('Codes/Functions.R')
 Initialize()
 
-TotalMatrix <- read.csv('Data/oldDataRefined/2_PrimaryDesignMat_label.csv',stringsAsFactors=F )
+TotalMatrix <- read.csv('Data/oldDataRefined/DesignMatrices/2_PrimaryDesignMat_label.csv',stringsAsFactors=F )
 Sequence <- data.frame(id=TotalMatrix$id,seq=TotalMatrix$seq)
 Sequence$seq <- as.character(Sequence$seq)
 
