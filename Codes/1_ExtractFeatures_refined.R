@@ -33,10 +33,10 @@ smRNAsRange = GRangesForBSGenome(genome = 'hg38',
                                  strand = annotFile$strand)
 
 smRNAsSeq = getSeq(hg38, smRNAsRange)
-
+smRNAsSeq <- RNAStringSet(complement(smRNAsSeq))
 
 #### Extract GC content of sequences ####
-acgtContent = floor(letterFrequency(smRNAsSeq, letters = 'ACGTN', OR = 0, as.prob = T)*100)
+acgtContent = floor(letterFrequency(smRNAsSeq, letters = 'ACGUN', OR = 0, as.prob = F))
 
 designMat = data.frame(id = paste0(annotFile$seqnames, '_', annotFile$start, '_', annotFile$end),
                        chr = annotFile$seqnames,
@@ -45,7 +45,7 @@ designMat = data.frame(id = paste0(annotFile$seqnames, '_', annotFile$start, '_'
                        a = as.integer(acgtContent[,'A']),
                        c = as.integer(acgtContent[,'C']),
                        g = as.integer(acgtContent[,'G']),
-                       t = as.integer(acgtContent[,'T']))
+                       u = as.integer(acgtContent[,'U']))
 
 head(designMat)
 write.csv(designMat, file = 'Data/oldDataRefined/1_PrimaryDesignMat.csv', quote = F, na = 'NA', row.names = F)
