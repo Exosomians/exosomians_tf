@@ -452,18 +452,25 @@ scoreTable <- scoreTable[order(scoreTable$sumScore, decreasing = T), ]
 scoreTable <- read.csv('Data/featureSelection/featureScoreTable.csv')
 rownames(scoreTable) <- scoreTable$X
 
+head(scoreTable)
 summary(scoreTable$sumScore)
-hist(scoreTable$sumScore)
+ggplot(scoreTable, aes(sumScore))+geom_histogram(color='black',fill='cyan', alpha=0.7,bins = 12)+
+  theme_bw()+xlab('Feature score')
 
 highScoreFeat <- rownames(subset(scoreTable, sumScore>7))
 highScore_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% highScoreFeat ]
 
+pdf('Data/featureSelection/selected_features.pdf')
 .checkFeatureByPCA(highScore_features, designMat)
 .checkFeatureBytSNE(highScore_features, designMat)
 .checkFeatureByUMAP(highScore_features, designMat)
+dev.off()
 
 highScore_features$label <- designMat$label
 head(highScore_features)
-write.csv(highScore_features, 'Data/designMat_selectedFeatures.csv')
+write.csv(highScore_features, 'Data/featureSelection/designMat_selectedFeatures.csv')
+highScore_features <- read.csv('Data/featureSelection/designMat_selectedFeatures.csv')
+
+
 
 

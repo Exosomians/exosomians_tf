@@ -10,14 +10,14 @@ Initialize = function()
   pac <- list( 'ggplot2', 'limma', 'pheatmap','Biostrings','RNAstructureModuleMiner','RRNA',
               'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret','ggfortify',
               'plyr', 'gridExtra','caTools', 'h2o','gtools','stringr', "pROC", 'ROCR', 'FactoMineR',
-              'factoextra')
+              'factoextra', 'data.table')
   
   print(paste(pac , lapply(pac, require, character.only = TRUE), sep = ' : '))
   
   pacman::p_load( 'ggplot2', 'limma', 'pheatmap', 'Biostrings','RNAstructureModuleMiner','RRNA',
                  'VennDiagram','e1071' ,'reshape2', 'ggrepel', 'RColorBrewer', 'caret','ggfortify',
                  'plyr','gridExtra','caTools','h2o','gtools','stringr', "pROC", 'ROCR', 'FactoMineR',
-                 'factoextra')
+                 'factoextra','data.table')
 }
 
 
