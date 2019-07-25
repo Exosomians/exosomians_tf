@@ -2,19 +2,25 @@ library(Biostrings)
 library(class)
 library(cluster)
 
-merDesignMat = read.csv('Data/MergedDesignMatLabel_LenFilter.csv', stringsAsFactors = FALSE)
+# merDesignMat = read.csv('Data/MergedDesignMatLabel_LenFilter.csv', stringsAsFactors = FALSE)
+merDesignMat = read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_PlusAnnot.csv', stringsAsFactors = FALSE)
+merDesignMat = read.csv('Data/MergedDesignMatLabel_sec_struct.csv', stringsAsFactors = FALSE)
+
+View(merDesignMat)
+dim(merDesignMat)
+View(testFile)
 length(merDesignMat[,merDesignMat$id != merDesignMat$X])
 # remove kmers because len is 0
 merDesignMat = merDesignMat[,c('id', 'chr', 'seq', 'length', 'strand', 'ic', 'ev', 'label')]
 dim(merDesignMat)
-merDesignMat = merDesignMat[merDesignMat$length > 20 & merDesignMat$length < 30 & merDesignMat$strand == '+',]
+merDesignMat = merDesignMat[merDesignMat$length > 40 & merDesignMat$length < 51 & merDesignMat$strand == '+',]
 dim(merDesignMat)
 yesMerDesignMat = merDesignMat[merDesignMat$label == 'YES', ]
 dim(yesMerDesignMat)
 noMerDesignMat = merDesignMat[merDesignMat$label == 'NO', ]
 dim(noMerDesignMat)
 
-noMerDesignMat = noMerDesignMat[sample(nrow(noMerDesignMat), size = 30, replace = FALSE),]
+noMerDesignMat = noMerDesignMat[sample(nrow(noMerDesignMat), size = 71, replace = FALSE),]
 yesMerDesignMat = yesMerDesignMat[sample(nrow(yesMerDesignMat), size = 30, replace = FALSE),]
 merDesignMat = rbind(yesMerDesignMat, noMerDesignMat)
 # shuffle rows
@@ -135,24 +141,17 @@ test_k_means_model <- function(designMat, distMat, k, maxIterations) {
     tot = nrow(kRows)
     yesn = nrow(yes)
     non = nrow(no)
-    print('k:')
-    print(j)
-    print('tot:')
-    print(tot)
-    print('yes:')
-    print(yesn/tot)
-    print('no:')
-    print(non/tot)
-    print('_________________________________')
+    print(paste("k:", as.character(j), ', all:', as.character(tot), ', yes:', as.character(yesn/tot), ', no:', as.character(non/tot), sep=""))
     if (j >= k) {
       break();
     }
   }
+  return(designMat$kmclust);
 }
 
 merDesignMat$kmclust <- 0
 View(merDesignMat)
 distMat = as.matrix(distanceObject)
 
-test_k_means_model(merDesignMat, distMat, 5, 25)
+merDesignMat$kmclust <- test_k_means_model(merDesignMat, distMat, 5, 50)
 
