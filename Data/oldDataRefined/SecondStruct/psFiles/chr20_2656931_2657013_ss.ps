@@ -1,0 +1,350 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: ViennaRNA-2.4.12
+%%CreationDate: Wed Jul 24 19:20:03 2019
+%%Title: RNA Secondary Structure Plot
+%%BoundingBox: 0 0 700 700
+%%DocumentFonts: Helvetica
+%%Pages: 1
+%%EndComments
+
+% Program options: 
+
+% To switch off outline pairs of sequence comment or
+% delete the appropriate line near the end of the file
+
+/RNAplot 100 dict def
+
+RNAplot begin
+
+%%BeginProlog
+
+/fsize  14 def
+/outlinecolor {0.2 setgray} bind def
+/paircolor    {0.2 setgray} bind def
+/seqcolor     {0   setgray} bind def
+/cshow  { dup stringwidth pop -2 div fsize -3 div rmoveto show} bind def
+/min { 2 copy gt { exch } if pop } bind def
+/max { 2 copy lt { exch } if pop } bind def
+/arccoords { % i j arccoords
+  % puts optimal x1 y1 x2 y2 coordinates used in bezier curves from i to j
+  % onto the stack
+  dup 3 -1 roll dup 4 -1 roll lt dup dup 5 2 roll {exch} if
+  dup 3 -1 roll dup 3 -1 roll exch sub 1 sub dup
+  4 -2 roll 5 -1 roll {exch} if 4 2 roll
+  sequence length dup 2 div exch 3 1 roll lt 
+  {exch 5 -1 roll pop 4 -2 roll exch 4 2 roll}
+  { 4 2 roll 5 -1 roll dup 6 1 roll {exch} if
+    4 -2 roll exch pop dup 3 -1 roll dup 4 1 roll
+    exch add 4 -1 roll dup 5 1 roll sub 1 sub
+    5 -1 roll not {4 -2 roll exch 4 2 roll} if
+  }ifelse
+   % compute the scalingfactor and prepare (1-sf) and sf*r
+  2 mul exch cpr 3 1 roll div dup
+  3 -1 roll mul exch 1 exch sub exch
+   % compute the coordinates
+  3 -1 roll 1 sub coor exch get aload pop % get coord for i
+  4 -1 roll dup 5 1 roll mul 3 -1 roll dup 4 1 roll add exch % calculate y1
+  4 -1 roll dup 5 1 roll mul 3 -1 roll dup 4 1 roll add exch % calculate x1
+  5 -1 roll 1 sub coor exch get aload pop % get coord for j
+  % duplicate j coord
+  dup 3 -1 roll dup 4 1 roll exch 8 2 roll
+  6 -1 roll dup 7 1 roll mul 5 -1 roll dup 6 1 roll add exch % calculate y2
+  6 -1 roll mul 5 -1 roll add exch % calculate x2
+  6 -2 roll % reorder
+} bind def
+/drawoutline {
+  gsave outlinecolor newpath
+  coor 0 get aload pop 0.8 0 360 arc % draw 5' circle of 1st sequence
+  currentdict /cutpoint known        % check if cutpoint is defined
+  {coor 0 cutpoint getinterval
+   {aload pop lineto} forall         % draw outline of 1st sequence
+   coor cutpoint 1 add get aload pop
+   2 copy moveto 0.8 0 360 arc       % draw 5' circle of 2nd sequence
+   coor cutpoint 1 add coor length cutpoint 1 add sub getinterval
+   {aload pop lineto} forall        % draw outline of 2nd sequence
+     } {
+        /i 0 def
+        coor {
+            /p coor i get def
+            /a arcs i get def
+            /l a length def
+            l 0 eq {
+                %% standard point... draw simple line
+                p 0 2 getinterval aload pop lineto
+            } {
+                %% point in loop... draw arc around loop center
+                /clockwise a 5 get def
+                clockwise 0.0000000 gt {
+                    a 0 5 getinterval aload pop arcn
+                } {
+                    a 0 5 getinterval aload pop arc
+                } ifelse
+            } ifelse
+            /i i 1 add def
+        } forall
+    }
+  ifelse
+  stroke grestore
+} bind def
+/drawpairs {
+  paircolor
+  0.7 setlinewidth
+  [9 3.01] 9 setdash
+  newpath
+  pairs {aload pop
+      currentdict (cpr) known
+      { exch dup
+        coor  exch 1 sub get aload pop moveto
+        exch arccoords curveto
+      }
+      { coor exch 1 sub get aload pop moveto
+        coor exch 1 sub get aload pop lineto
+      }ifelse
+  } forall
+  stroke
+} bind def
+% draw bases
+/drawbases {
+  [] 0 setdash
+  seqcolor
+  0
+  coor {
+    aload pop moveto
+    dup sequence exch 1 getinterval cshow
+    1 add
+  } forall
+  pop
+} bind def
+/init {
+  /Helvetica findfont fsize scalefont setfont
+  1 setlinejoin
+  1 setlinecap
+  0.8 setlinewidth
+  % find the coordinate range
+  /xmax -1000 def /xmin 10000 def
+  /ymax -1000 def /ymin 10000 def
+  coor {
+      aload pop
+      dup ymin lt {dup /ymin exch def} if
+      dup ymax gt {/ymax exch def} {pop} ifelse
+      dup xmin lt {dup /xmin exch def} if
+      dup xmax gt {/xmax exch def} {pop} ifelse
+  } forall
+  /size {xmax xmin sub ymax ymin sub max} bind def
+  /width {xmax xmin sub} bind def
+  /height {ymax ymin sub} bind def
+  10 10 translate
+  680 size 10 add div dup scale
+  size width sub width xmin sub xmax sub add 2 div 5 add
+  size height sub height ymin sub ymax sub add 2 div 5 add
+  translate
+} bind def
+
+%%EndProlog
+
+% data start here
+/sequence { (\
+GAUCGACAACCUCCACUACUUGACAGACUCGGACUGGAACAUCUUACCUCCGUUUUUUUGACUAAAUUACUCGGACUAGGUUA\
+) } def
+/len { sequence length } bind def
+
+/coor [
+[33.36662674 144.77755737]
+[22.62146568 150.06970215]
+[11.01766968 153.01132202]
+[-0.93727595 153.47669983]
+[-12.72113609 151.44837952]
+[-23.81974411 147.01773071]
+[-33.74943161 140.38090515]
+[-42.07810974 131.83012390]
+[-48.44406891 121.74084473]
+[-52.57168579 110.55520630]
+[-54.28336716 98.76271820]
+[-53.50716782 86.87882996]
+[-67.84075928 82.45750427]
+[-82.17435455 78.03617096]
+[-96.50794220 73.61484528]
+[-105.98233032 81.26987457]
+[-117.87540436 83.26350403]
+[-129.09974670 79.19913483]
+[-136.80076599 70.23728943]
+[-139.08247375 58.76738358]
+[-153.04557800 53.28726578]
+[-167.00868225 47.80715179]
+[-180.97178650 42.32703781]
+[-196.19206238 47.39880753]
+[-209.56799316 38.54082870]
+[-210.83872986 22.54817963]
+[-199.02944946 11.68905449]
+[-183.19923401 14.29364491]
+[-175.49166870 28.36392975]
+[-161.52856445 33.84404755]
+[-147.56546021 39.32416153]
+[-133.60235596 44.80427551]
+[-117.53341675 36.42396164]
+[-100.06457520 42.31528854]
+[-92.08661652 59.28125381]
+[-77.75302124 63.70257950]
+[-63.41943359 68.12390900]
+[-49.08583832 72.54523468]
+[-38.73495483 57.13656998]
+[-23.96607971 45.85865402]
+[-6.33767176 39.91774368]
+[12.28485584 39.95606613]
+[29.92653275 45.98241806]
+[44.71227646 57.36986542]
+[55.06618881 72.92093658]
+[59.87952423 90.99354553]
+[74.86903381 91.55442047]
+[89.85854340 92.11528778]
+[104.85592651 91.83480072]
+[119.81398010 90.71385193]
+[134.77203369 89.59290314]
+[149.73008728 88.47194672]
+[160.01794434 76.77587891]
+[175.20350647 75.85215759]
+[186.29051208 85.73212433]
+[196.57835388 74.03605652]
+[211.76393127 73.11233521]
+[222.85093689 82.99230194]
+[237.80899048 81.87134552]
+[249.32142639 70.69801331]
+[265.21606445 72.87517548]
+[273.29989624 86.73270416]
+[267.37170410 101.64028931]
+[251.97909546 106.16210175]
+[238.92994690 96.82940674]
+[223.97189331 97.95035553]
+[214.48124695 109.37240601]
+[199.32760620 110.72229004]
+[187.41146851 100.69017792]
+[177.92082214 112.11222839]
+[162.76719666 113.46211243]
+[150.85104370 103.43000793]
+[135.89299011 104.55095673]
+[120.93492889 105.67190552]
+[105.97687531 106.79286194]
+[102.90669250 109.56558990]
+[98.56376648 110.85232544]
+[93.69932556 110.09092712]
+[89.29767609 107.10479736]
+[74.30816650 106.54393005]
+[59.31865692 105.98306274]
+[56.05071640 117.53480530]
+[50.45641708 128.14901733]
+] def
+/arcs [
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+[]
+] def
+/pairs [
+[12 38]
+[13 37]
+[14 36]
+[15 35]
+[20 32]
+[21 31]
+[22 30]
+[23 29]
+[46 81]
+[47 80]
+[48 79]
+[49 75]
+[50 74]
+[51 73]
+[52 72]
+[55 69]
+[58 66]
+[59 65]
+] def
+
+init
+
+% switch off outline pairs or bases by removing these lines
+drawoutline
+drawpairs
+drawbases
+showpage
+end
+%%EOF
