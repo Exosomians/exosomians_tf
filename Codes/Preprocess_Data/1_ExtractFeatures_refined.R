@@ -13,11 +13,11 @@ Initialize()
 library(BSgenome.Hsapiens.UCSC.hg38)
 
 #### Extracting features using annotation files ####
-ANNOTATION_DATA_DIR = 'Data/oldDataRefined'
+ANNOTATION_DATA_DIR = 'Data/oldDataRefined/Counts_and_Beds'
 annotsPath = list.files(ANNOTATION_DATA_DIR, pattern = '*.bed',full.names = T)
 names(annotsPath) <- substr(list.files(ANNOTATION_DATA_DIR, pattern = '*.bed'),1,2)
 annotFile = read.delim(annotsPath[['IC']], header = F)
-colnames(annotFile) = c('seqnames', 'start', 'end')
+colnames(annotFile) = c('seqnames', 'start', 'end', 'regionName', 'score', 'strand')
 head(annotFile)
 dim(annotFile)
 
@@ -33,12 +33,12 @@ smRNAsRange = GRangesForBSGenome(genome = 'hg38',
                                  strand = annotFile$strand)
 
 smRNAsSeq = getSeq(hg38, smRNAsRange)
-smRNAsSeq <- RNAStringSet(complement(smRNAsSeq))
+smRNAsSeq <- RNAStringSet(reverseComplement(smRNAsSeq))
 
 #### Extract GC content of sequences ####
 acgtContent = floor(letterFrequency(smRNAsSeq, letters = 'ACGUN', OR = 0, as.prob = F))
 
-designMat = data.frame(id = paste0(annotFile$seqnames, '_', annotFile$start, '_', annotFile$end),
+designMat = data.frame(id = paste0(annotFile$seqnames, '_', annotFile$start, '_', annotFile$end, annotFile$strand),
                        chr = annotFile$seqnames,
                        seq = as.character(smRNAsSeq),
                        length = width(smRNAsSeq),
@@ -48,6 +48,6 @@ designMat = data.frame(id = paste0(annotFile$seqnames, '_', annotFile$start, '_'
                        u = as.integer(acgtContent[,'U']))
 
 head(designMat)
-write.csv(designMat, file = 'Data/oldDataRefined/1_PrimaryDesignMat.csv', quote = F, na = 'NA', row.names = F)
+write.csv(designMat, file = 'Data/oldDataRefined/DesignMatrices/1_IC_PrimaryDesignMat.csv', quote = F, na = 'NA', row.names = F)
 
 
