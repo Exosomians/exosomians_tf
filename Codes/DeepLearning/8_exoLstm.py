@@ -122,10 +122,7 @@ def specificity(y_true, y_pred):
 def lstm(seq_len, onehot_len):
     lstm_input = Input(shape=(seq_len, onehot_len,))
 
-    lstm = LSTM(16, return_se
-
-
-    quences=True)(lstm_input)  #  (None,497 ,16)
+    lstm = LSTM(16, return_sequences=True)(lstm_input)  #  (None,497 ,16)
     lstm = BatchNormalization()(lstm)
     lstm = LeakyReLU()(lstm)
 
