@@ -5,11 +5,11 @@ import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten, LSTM
+from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from keras.utils import to_categorical
 
-from exoNet.models._activations import ACTIVATIONS
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
 from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
@@ -66,18 +66,18 @@ class ExoCNNLSTM(Network):
                    kernel_regularizer=self.regularizer)(self.x)
         if self.use_batchnorm:
             h = BatchNormalization(trainable=True)(h)
-        h = ACTIVATIONS[self.activations](h)
+        h = LeakyReLU()(h)
         h = MaxPooling1D(pool_size=2)(h)
 
         h = LSTM(16, activation='linear', return_sequences=False)(h)  # (None, 16)
-        h = ACTIVATIONS[self.activations](h)
+        h = LeakyReLU()(h)
 
         h = Flatten()(h)
 
         h = Dense(32, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(h)
         if self.use_batchnorm:
             h = BatchNormalization()(h)
-        h = ACTIVATIONS[self.activations](h)
+        h = LeakyReLU()(h)
         if self.dr_rate > 0:
             h = Dropout(self.dr_rate)(h)
 
