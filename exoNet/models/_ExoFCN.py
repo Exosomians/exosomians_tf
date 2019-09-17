@@ -61,10 +61,13 @@ class ExoFCN(Network):
             self.model.summary()
 
     def _create_network(self):
-        h = self.x
         for idx, n_neuron in enumerate(self.architecture):
-            h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
-                      kernel_regularizer=self.regularizer)(h)
+            if idx == 0:
+                h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
+                          kernel_regularizer=self.regularizer)(self.x)
+            else:
+                h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
+                          kernel_regularizer=self.regularizer)(h)
             if self.use_batchnorm:
                 h = BatchNormalization(axis=1, trainable=True)(h)
             h = ACTIVATIONS[self.activations](h)
