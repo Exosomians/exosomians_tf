@@ -38,7 +38,6 @@ class ExoFCN(Network):
             "n_classes": self.n_classes,
             "dropout_rate": self.dr_rate,
             "loss_fn": self.loss_fn,
-            "activations": self.activations,
             "architecture": self.architecture,
             "use_batchnorm": self.use_batchnorm,
         }
