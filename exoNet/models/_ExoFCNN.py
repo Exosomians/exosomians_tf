@@ -11,7 +11,7 @@ from keras.utils import to_categorical
 
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
-from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
+from exoNet.utils import remove_sparsity, label_encoder, train_test_split_data
 
 
 class ExoFCNN(Network):

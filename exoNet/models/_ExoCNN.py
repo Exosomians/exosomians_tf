@@ -12,7 +12,7 @@ from keras.utils import to_categorical
 
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
-from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
+from exoNet.utils import label_encoder, train_test_split_data
 
 
 class ExoCNN(Network):
@@ -123,17 +123,15 @@ class ExoCNN(Network):
         self.model = load_model(os.path.join(self.model_path, f"{self.model_name}.h5"), compile=False)
         self._compile_models()
 
-    def train(self, adata, label_key, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
+    def train(self, seq_data, labels, label_key, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
               lr_reducer_kwargs={}, verbose=2):
-        adata = remove_sparsity(adata)
+        x_train, x_valid, y_train, y_valid, valid_adata = train_test_split_data(seq_data, labels, 0.80, stratify=True)
 
-        train_adata, valid_adata = train_test_split_adata(adata, 0.80)
+        y_train, self.label_encoder = label_encoder(y_train, label_encoder=le)
+        y_train = to_categorical(y_train, num_classes=self.n_classes)
 
-        train_labels, self.label_encoder = label_encoder(train_adata, label_key=label_key, label_encoder=le)
-        train_labels = to_categorical(train_labels, num_classes=self.n_classes)
-
-        valid_labels, self.label_encoder = label_encoder(valid_adata, label_key=label_key, label_encoder=le)
-        valid_labels = to_categorical(valid_labels, num_classes=self.n_classes)
+        y_valid, self.label_encoder = label_encoder(y_valid, label_encoder=le)
+        y_valid = to_categorical(y_valid, num_classes=self.n_classes)
 
         callbacks = []
 
@@ -142,12 +140,6 @@ class ExoCNN(Network):
 
         if lr_reducer_kwargs != {}:
             callbacks.append(ReduceLROnPlateau(**lr_reducer_kwargs))
-
-        x_train = train_adata.X.reshape(shape=(-1, self.seq_len, self.n_channels))
-        y_train = train_labels
-
-        x_valid = valid_adata.X.reshape(shape=(-1, self.seq_len, self.n_channels))
-        y_valid = valid_labels
 
         self.model.fit(x=x_train,
                        y=y_train,

@@ -12,7 +12,7 @@ from keras.utils import to_categorical
 
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
-from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
+from exoNet.utils import remove_sparsity, label_encoder, train_test_split_data
 
 
 class ExoCNNLSTM(Network):
@@ -109,7 +109,7 @@ class ExoCNNLSTM(Network):
               lr_reducer_kwargs={}, verbose=2):
         adata = remove_sparsity(adata)
 
-        train_adata, valid_adata = train_test_split_adata(adata, 0.80)
+        train_adata, valid_adata = train_test_split_data(adata, 0.80)
 
         train_labels, self.label_encoder = label_encoder(train_adata, label_key=label_key, label_encoder=le)
         train_labels = to_categorical(train_labels, num_classes=self.n_classes)
