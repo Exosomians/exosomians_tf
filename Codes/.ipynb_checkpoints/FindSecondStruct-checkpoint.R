@@ -9,7 +9,7 @@
 source('Codes/Functions.R')
 Initialize()
 
-TotalMatrix <- read.csv('Data/oldDataRefined/DesignMatrices/2_PrimaryDesignMat_label.csv',stringsAsFactors=F )
+TotalMatrix <- read.csv('Data/MergedDesignMatLabel_LenFilter.csv',stringsAsFactors=F )
 Sequence <- data.frame(id=TotalMatrix$id,seq=TotalMatrix$seq)
 Sequence$seq <- as.character(Sequence$seq)
 
@@ -27,7 +27,7 @@ writeFasta<-function(data, filename){
 }
 
 head(Sequence)
-writeFasta(Sequence, "Data/oldDataRefined/SecondStruct/RegionsLenFilter.fasta")
+writeFasta(Sequence, "Data/RegionsLenFilter.fasta")
 
 
 
@@ -35,15 +35,15 @@ writeFasta(Sequence, "Data/oldDataRefined/SecondStruct/RegionsLenFilter.fasta")
 # Secondary structure prediction using ViennaRNA tool
 
 ### bash 
-# RNAfold  -i RegionsLenFilter.fasta > RNAseconStructPredict.txt
+# RNAfold  -i RegionsLenFilter.fasta -o RNAseconStructPredict.txt
 # grep '(\|>' RNAseconStructPredict.txt > RNAseconStructPredict_withoutSeq.txt
 
-RNAseqFasta <- readRNAStringSet('Data/oldDataRefined/SecondStruct/RegionsLenFilter.fasta')
+RNAseqFasta <- readRNAStringSet('Data/RegionsLenFilter.fasta')
 SeqID = names(RNAseqFasta)
 RNAseqLength <- nchar(paste(RNAseqFasta))
 hist(RNAseqLength,breaks = seq(1,520,10))
 
-SecondaryStructureWithEnergy = readBStringSet("Data/oldDataRefined/SecondStruct/RNAseconStructPredict_withoutSeq.txt")
+SecondaryStructureWithEnergy = readBStringSet("Data/RNAseconStructPredict_withoutSeq.txt")
 sum(names(SecondaryStructureWithEnergy)!=SeqID)
 
 SecondaryStructureWithEnergy <- paste(SecondaryStructureWithEnergy)  
@@ -72,9 +72,7 @@ DotBracket_SingleMerMatrix <- MakeFeatureSpecificMatrix(All_Possible_DotBracket_
 head(DotBracket_SingleMerMatrix)
 DrawFeatureDistribution(DotBracket_SingleMerMatrix)
 
-
-
-################# IGNORE THIS SECTION -> UNINFORMATIVE FEATURE
+#################
 ### Generate Tri-mer feature for dot-bracket 
 
 # add middle nucleotide to the K-mer 
@@ -87,37 +85,27 @@ DotBracket_3mer <- sapply(1:length(DotBracketSecondStruct), function(i)
 # make design matrix for Kmer
 DotBracket_3merMatrix <- MakeFeatureSpecificMatrix(All_Possible_DotBracket_3Kmer, DotBracket_3mer, Sequence$id)
 DrawFeatureDistribution(DotBracket_3merMatrix)
-#################
+
 
 
 #### merging all design matrices together
-RNAsecondaryStructFeatures <- cbind(FreeEnergy, DotBracket_SingleMerMatrix)
+RNAsecondaryStructFeatures <- cbind(FreeEnergy, DotBracket_SingleMerMatrix ,DotBracket_3merMatrix)
 RNAsecondaryStructFeatures$DB <- DotBracketSecondStruct
 
 
 RNAstructColNames <- colnames(RNAsecondaryStructFeatures)
 RNAstructColNames <- sapply(RNAstructColNames, RefineSecondStructColNames, simplify = F)
 colnames(RNAsecondaryStructFeatures) <- RNAstructColNames
-RNAsecondaryStructFeatures$id <- rownames(RNAsecondaryStructFeatures)
-rownames(RNAsecondaryStructFeatures) <- NULL
-head(RNAsecondaryStructFeatures)
-
-write.csv(RNAsecondaryStructFeatures, 'Data/oldDataRefined/SecondStruct/SecondStructFeatures_LenFilter.csv',row.names = F)
-RNAsecondaryStructFeatures <- read.csv('Data/oldDataRefined/SecondStruct/SecondStructFeatures_LenFilter.csv', stringsAsFactors = F)
 
 
+write.csv(RNAsecondaryStructFeatures, 'Data/SecondStructFeatures_LenFilter.csv',row.names = T,col.names = T)
 
-
-
-### merging the k-mer design matrix(filtered based on min-length=18) with secondary structures 
-TotalMatrixWithStruct <- merge(TotalMatrix, RNAsecondaryStructFeatures, by.x='id',by.y='id',all.x=T)
-write.csv(TotalMatrixWithStruct, 'Data/oldDataRefined/DesignMatrices/3_DesignMat_SS_Label.csv',row.names = F)
-head(TotalMatrixWithStruct)
+TotalMatrixWithStruct <- cbind(TotalMatrix, RNAsecondaryStructFeatures)
+dim(TotalMatrixWithStruct)
+write.csv(TotalMatrixWithStruct, 'Data/MergedDesignMatLabel_SecondStruct_LenFilter.csv',row.names = T,col.names = T)
 
 
 
-
-## Additional notes for future
 ###################
 # RNA binding proteins:
 

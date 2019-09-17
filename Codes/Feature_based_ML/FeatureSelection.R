@@ -61,17 +61,15 @@ FeatureSelectionLibs()
 
 #### loading data
 
-TotalMatrixWithStruct <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_PlusAnnot.csv', stringsAsFactors = F)
-deepbind <- read.delim('Data/deepbind_features.txt')
+designMat <- read.csv('Data/oldDataRefined/DesignMatrices/7_DesignMat_SS_Kmer_DB_ForgiAnnot_Label.csv')
+DeepBind_ids <- read.csv('Data/oldDataRefined/deepbind/deepBind_dictionary.csv',stringsAsFactors = F)
+#DeepBind_colnames <- colnames(designMat)[273:889]
+#DeepBind_df <- DeepBind_ids[DeepBind_ids$id %in% DeepBind_colnames,]
 
 ## data preprocessing
-ColumnsToDrop <- c('id','X','X.1','X.2','ic','ev','seq','DB','annotation','rnaType','element_string','element_string_number')
-designMat <- TotalMatrixWithStruct[,!colnames(TotalMatrixWithStruct) %in% ColumnsToDrop ]
+ColumnsToDrop <- c('id','ic','ev','seq','DB','element_string')
+designMat <- designMat[,!colnames(designMat) %in% ColumnsToDrop ]
 
-## previous results(wrapper method) showed the trimer Second-struct features are not much informative
-designMat <- designMat[,-c(which(colnames(designMat)=="A000"):which(colnames(designMat)=="G111"))]
-
-designMat <- cbind(designMat, deepbind)
 
 categorical_index = unlist(lapply(designMat, function(x) !class(x) %in% c('numeric', 'integer')))
 colnames(designMat)[categorical_index]
@@ -120,7 +118,7 @@ correlationMatrix <- cor(subset(numerical_designMat_norm, select=-label))
 correlation_melt <- melt(correlationMatrix)
 
 ### table of highly correlated features
-x = subset(correlation_melt, Var1 != Var2 & (value>0.8 | value<(-0.8)) )
+x = subset(correlation_melt, Var1 != Var2 & (value>0.85 | value<(-0.85)) )
 
 
 # if  (row_1= a b  row_2= b a ) then remove row_2
@@ -163,7 +161,6 @@ pdf('Data/featureSelection/uncor_features.pdf')
 #### DE approach
 
 Dif_features <- .ComputeDEbyLimma(designMat$label, subset(numerical_designMat, select=-label))
-Dif_features<-readRDS('Data/featureSelection/DifExpFeatures.rds')
 DE_features <- rownames(subset(Dif_features, logFC > 2 | logFC < (-2)))
 
 
@@ -294,14 +291,14 @@ task <- makeClassifTask(data = cbind(subset(numerical_designMat,select=-label),l
                        target = 'label')
 
 res <- selectFeatures("classif.rpart", task, rdesc, control = ctrl)
-res <- readRDS('Data/featureSelection/forwardSel.rds' )
+saveRDS(res, 'Data/oldDataRefined/featureSelection/forwardSel.rds' )
 analyzeFeatSelResult(res)  ### only selected feature:  D00120.001 = MBNL1(RBP, Znf)
 
 
 data_norm <- cbind(subset(numerical_designMat_norm,select=-label),label=designMat$label)
 task_norm <- makeClassifTask(data = data_norm, target = 'label')
 res_norm <- selectFeatures("classif.rpart", task_norm, rdesc, control = ctrl)
-res_norm <- readRDS('Data/featureSelection/forwardSel_norm.rds' )  ## only selected feature: GCGC
+saveRDS(res_norm,'Data/oldDataRefined/featureSelection/forwardSel_norm.rds' )  ## only selected feature: GCGC
 analyzeFeatSelResult(res_norm) 
 
 
@@ -310,7 +307,7 @@ analyzeFeatSelResult(res_norm)
 
 cf1 <- cforest(label ~ . , data= numerical_designMat_norm, control=cforest_unbiased(mtry=2,ntree=50)) 
 varImpRF <- varimp(cf1) # var imp based on mean decrease in accuracy
-varImpRF <- readRDS('Data/featureSelection/varImpRF.rds')
+varImpRF <- readRDS('Data/oldDataRefined/featureSelection/varImpRF.rds')
 
 ## DON'T RUN the next line in the future. extremely time consuming
 # varImpRF_adj <- varimp(cf1, conditional=TRUE)  # conditional=True, adjusts for correlations between predictors 
@@ -324,7 +321,7 @@ rownames(data.frame(varImpRF[varImpRF>quantile(varImpRF, 0.85)]))
 ### Boruta 
 
 boruta_output <- Boruta(label ~ ., data=na.omit(numerical_designMat_norm), doTrace=2)  # perform Boruta search
-boruta_output <- readRDS('Data/featureSelection/boruta_output.rds')
+boruta_output <- readRDS('Data/oldDataRefined/featureSelection/boruta_output.rds')
 boruta_signif <- names(boruta_output$finalDecision[boruta_output$finalDecision %in% c("Confirmed", "Tentative")]) 
 boruta_signif  # significant variables
 rejected_features <- names(boruta_output$finalDecision)[boruta_output$finalDecision != 'Confirmed'] ## rejected variables
@@ -449,18 +446,28 @@ scoreTable <- data.frame(cbind(diffExp,InfoGain, InfoGain_norm, GCV, ForwardSel,
 
 scoreTable$sumScore <- rowSums(scoreTable)
 scoreTable <- scoreTable[order(scoreTable$sumScore, decreasing = T), ]
-scoreTable <- read.csv('Data/featureSelection/featureScoreTable.csv')
+write.csv(scoreTable, 'Data/oldDataRefined/featureSelection/featureScoreTable.csv')
 rownames(scoreTable) <- scoreTable$X
 
-head(scoreTable)
 summary(scoreTable$sumScore)
 ggplot(scoreTable, aes(sumScore))+geom_histogram(color='black',fill='cyan', alpha=0.7,bins = 12)+
   theme_bw()+xlab('Feature score')
 
-highScoreFeat <- rownames(subset(scoreTable, sumScore>7))
-highScore_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% highScoreFeat ]
 
-pdf('Data/featureSelection/selected_features.pdf')
+highScoreFeat <- rownames(subset(scoreTable, sumScore>6))
+head(scoreTable, 10)
+highScore_features <- numerical_designMat[,as.character(colnames(numerical_designMat)) %in% highScoreFeat ]
+head(DeepBind_ids)
+
+Ds <- highScoreFeat[grep('D0*',highScoreFeat)] 
+highScoreFeat[grep('D0*',highScoreFeat)] <- DeepBind_ids$protein_name[DeepBind_ids$id %in% Ds]
+data.frame(highScoreFeat)
+
+YBX1_id <- DeepBind_ids$id[DeepBind_ids$protein_name=='YBX1']
+scoreTable[scoreTable$X==YBX1_id[2],]
+
+
+pdf('Data/oldDataRefined/featureSelection/selected_features.pdf')
 .checkFeatureByPCA(highScore_features, designMat)
 .checkFeatureBytSNE(highScore_features, designMat)
 .checkFeatureByUMAP(highScore_features, designMat)

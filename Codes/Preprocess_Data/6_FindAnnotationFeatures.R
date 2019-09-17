@@ -3,26 +3,8 @@
 
 ## for more information about these annotations, please check: https://viennarna.github.io/forgi/graph_tutorial.html
 
-
-## import data 
-data <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv', stringsAsFactors = F)
-annotations <- data$element_string
-
-
-motifCounts <- data.frame(do.call(rbind, lapply(annotations, .getNumberOfMotifs)))
-colnames(motifCounts) <- c('fiveprime', 'threeprime', 'stem', 'interior_loop', 'multiloop', 'hairpin')
-
-longestHairpins <- unlist(lapply(annotations, .getLongestMotif, 'h'))
-longestStemLoop <- unlist(lapply(annotations, .getLongestMotif, 's'))
-
-annotation_features <- data.frame(cbind(motifCounts, longestHairpins, longestStemLoop))
-write.csv(annotation_features, 'Data/annotation_features.csv', row.names = F)
-
-
-write.csv(cbind(data, annotation_features),'Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_PlusAnnot.csv', row.names=F)
-
-
-
+source('Codes/Functions.R')
+Initialize()
 
 .getNumberOfMotifs <- function(String){
   values <- replicate(6, 0)
@@ -32,7 +14,6 @@ write.csv(cbind(data, annotation_features),'Data/MergedDesignMatLabel_SecondStru
   } 
   return(values)
 }
-
 
 
 .getLongestMotif <- function(String, motif){
@@ -54,5 +35,25 @@ write.csv(cbind(data, annotation_features),'Data/MergedDesignMatLabel_SecondStru
   }
   return(max_hairpin)
 }
+
+
+## import data 
+# data <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv', stringsAsFactors = F)
+data <- read.csv('Data/oldDataRefined/DesignMatrices/6_DesignMat_SS_Kmer_DB_Forgi_Label.csv', stringsAsFactors = F)
+annotations <- data$element_string
+
+
+motifCounts <- data.frame(do.call(rbind, lapply(annotations, .getNumberOfMotifs)))
+colnames(motifCounts) <- c('fiveprime', 'threeprime', 'stem', 'interior_loop', 'multiloop', 'hairpin')
+
+longestHairpins <- unlist(lapply(annotations, .getLongestMotif, 'h'))
+longestStemLoop <- unlist(lapply(annotations, .getLongestMotif, 's'))
+
+annotation_features <- data.frame(cbind(motifCounts, longestHairpins, longestStemLoop))
+write.csv(annotation_features, 'Data/oldDataRefined/SecondStruct/annotation_features.csv', row.names = F)
+
+
+write.csv(cbind(subset(data,select=-element_string_number), annotation_features),
+          'Data/oldDataRefined/DesignMatrices/7_DesignMat_SS_Kmer_DB_ForgiAnnot_Label.csv', row.names=F)
 
 

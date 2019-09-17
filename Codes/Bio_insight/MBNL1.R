@@ -3,14 +3,15 @@
 source('Codes/Functions.R')
 Initialize()
 
-TotalMatrixWithStruct <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_PlusAnnot.csv', stringsAsFactors = F)
-highScore_features <- read.csv('Data/featureSelection/designMat_selectedFeatures.csv')
+#TotalMatrixWithStruct <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_PlusAnnot.csv', stringsAsFactors = F)
+#highScore_features <- read.csv('Data/featureSelection/designMat_selectedFeatures.csv')
+
+TotalMatrixWithStruct <- read.csv('Data/oldDataRefined/DesignMatrices/5_DesignMat_SS_Kmer_DB_Label.csv', stringsAsFactors = F)
 dim(TotalMatrixWithStruct)
-dim(highScore_features)
 
 
 #### MBNL1 distribution
-MBNL1_unmelt <- subset(highScore_features,select=c(D00120.001, label))
+MBNL1_unmelt <- subset(TotalMatrixWithStruct,select=c(D00120.001, label))
 MBNL1 <- melt(MBNL1_unmelt)
 head(MBNL1)
 
@@ -20,13 +21,13 @@ p2=ggplot(MBNL1, aes(x=value,color=label))+geom_density()+
   theme_bw()+ggtitle('raw MBNL1 data')+xlab('deepbind score')
 
 MBNL1_norm <- MBNL1
-MBNL1_norm$value <- MBNL1$value /highScore_features$length
+MBNL1_norm$value <- MBNL1$value /TotalMatrixWithStruct$length
 p3=ggplot(MBNL1_norm, aes(y=value,x=label))+geom_boxplot(aes(fill=label))+
   theme_bw()+ggtitle('normalized MBNL1 data')+ylab('deepbind score/length')
 p4=ggplot(MBNL1_norm, aes(x=value,color=label))+geom_density()+
   theme_bw()+ggtitle('normalized MBNL1 data')+xlab('deepbind score/length')
 
-pdf('plots/MBNL1_distribution.pdf',width=11,height = 11)
+pdf('plots/oldDataRefined/MBNL1_distribution.pdf',width=12,height = 12)
 gridExtra::grid.arrange(p1,p2,p3,p4,nrow=2,ncol=2)
 dev.off()
 
@@ -37,17 +38,20 @@ MBNL1_unmelt <- cbind(MBNL1_unmelt, TotalMatrixWithStruct[,c('id','ic','ev')])
 head(MBNL1_unmelt)
 
 ### import the bed file to find the genomic positions for each id
-bed <- read.table('Data/Annotation/combined.cluster.scoref10.bed')
+#bed <- read.table('Data/Annotation/combined.cluster.scoref10.bed')
+bed <- read.table('Data/oldDataRefined/Counts_and_Beds/all_inrange_18l_500l_20covered_regions_annotated.srt.bed')
 colnames(bed) <- c('chr', 'start', 'end', 'id', 'score','strand')
 bed <- subset(bed, select=-c(score))
+bed$id <- paste0(bed$chr, '_',bed$start, '_', bed$end)
+
 
 MBNL1_regions <- merge(MBNL1_unmelt, bed, all.x=T, all.y=F, by.x='id',by.y='id')
 MBNL1_regions <- subset(MBNL1_regions, select=c('chr','start','end','strand','id','D00120.001','ic','ev','label'))
-head(MBNL1_regions,10)
-write.table(MBNL1_regions,'Data/bedToCheck.bed',quote = F,row.names = F,col.names = F,sep = '\t')
+head(MBNL1_regions)
+write.table(MBNL1_regions,'Data/oldDataRefined/MBNL1/bedToCheck.bed',quote = F,row.names = F,col.names = F,sep = '\t')
 
 
-MBNL1_regions <- read.delim('Data/MBNL1/bedToCheck.bed', stringsAsFactors = F,header = F)
+MBNL1_regions <- read.table('Data/oldDataRefined/MBNL1/bedToCheck.bed', stringsAsFactors = F,header = F)
 colnames(MBNL1_regions) <- c('chr','start','end','strand','id','D00120.001','ic','ev','label')
 head(MBNL1_regions)
 
@@ -56,7 +60,7 @@ head(MBNL1_regions)
 ## import the liftOvered(Hg19-to-Hg38) clip data and preprocess it
 ## cleaned bed files will be given to bedtools to find the intersection with our own regions
 
-DATA_DIRECTORY = 'Data/MBNL1/liftOver/liftOvered_beds'
+DATA_DIRECTORY = 'Data/oldData/MBNL1/liftOver/liftOvered_beds'
 clip_data <- list.files(DATA_DIRECTORY,full.names = T)
 clip <- lapply(clip_data, fread)
 names(clip) <- c('B', 'C', 'peaks')
@@ -66,7 +70,7 @@ clip <- lapply(clip, data.frame)
 
 lapply(clip, head)
 sapply(1:length(clip), function(i)
-  write.table(clip[[i]],paste0('Data/MBNL1_',names(clip)[i],'_chip.bed'),
+  write.table(clip[[i]],paste0('Data/oldData/MBNL1/MBNL1_',names(clip)[i],'_chip.bed'),
               quote = F,row.names = F,col.names = F,sep = '\t'))
 
 
@@ -81,7 +85,10 @@ ggplot(samples, aes(x=count))+geom_histogram(aes(fill=sample),color='black',bins
 
 
 
-
+clipFiles <- list.files('Data/oldData/MBNL1',pattern = '*chip.bed', full.names = T)
+clip <- lapply(clipFiles, read.delim, header=F, stringsAsFactors=F)
+clip <- lapply(clip, function(x) {colnames(x) = c('chr','start','end', 'count','strand');x})
+names(clip) <- c('B', 'C', 'peaks')
 
 #### finding intersection and visualization
 
@@ -112,17 +119,17 @@ MBNL1_bed_colnames <- colnames(MBNL1_regions)
 
 
 
-INTERSECTIONS_DIRECTORY <- 'Data/MBNL1/intersection'
+INTERSECTIONS_DIRECTORY <- 'Data/oldDataRefined/MBNL1/intersection'
 intersect_files <- list.files(INTERSECTIONS_DIRECTORY, full.names = T)
 intersect_files <- lapply(intersect_files, read.table)
 intersect_files <- lapply(intersect_files, .preprocessIntersection)
-names(intersect_files) <- c('B', 'C', 'peaks')
+names(intersect_files) <- c('B_0.2', 'C_0.2', 'B_0.4', 'C_0.4')
 lapply(intersect_files, head)
 
 
-intersect_0.2th_titles <- c('B sample(cutoff=0.2)', 'C sample(cutoff=0.2)')
-pdf('plots/MBNLP1_clip_0.2.pdf', width = 12, height=6)
-sapply(1:2,
+
+pdf('plots/oldDataRefined/MBNLP1_clip.pdf', width = 12, height=6)
+sapply(1:length(intersect_files),
   function(i){
     .visualizeIntersect(intersect_files[[i]], names(intersect_files)[i])
   }, simplify = F)
@@ -139,12 +146,19 @@ dev.off()
   return(tab)
 }
 
-intersect_peaks <- intersect_files[['peaks']]
-peaks_tab_init <- table(subset(intersect,select=c(count_clip,label)))
+INTERSECTIONS_DIRECTORY <- 'Data/oldDataRefined/MBNL1/intersection/called_peaks/'
+intersect_files <- list.files(INTERSECTIONS_DIRECTORY, full.names = T)
+intersect_files <- lapply(intersect_files, read.table)
+intersect_files <- lapply(intersect_files, .preprocessIntersection)
+names(intersect_files) <- c('peaks_0.2', 'peaks_0.4')
+
+intersect_peaks <- intersect_files[['peaks_0.2']]
+peaks_tab_init <- table(subset(intersect_peaks,select=c(count_clip,label)))
+
 
 peaks_tab <- .cleanTable(peaks_tab_init)
 p1=ggplot(peaks_tab, aes(x=count_clip,y=value,fill=label))+geom_bar(stat = 'identity',color='black')+
-  theme_bw()+xlab('')+ylab('count')+scale_fill_manual(values=c('#999999','#E69F00'))+ggtitle('raw data')
+  theme_bw()+xlab('')+ylab('count')+scale_fill_manual(values=c('#999999','#E69F00'))+ggtitle('raw data-0.2')
 
 ## scaling by peak
 pScaled_tab <- peaks_tab_init/rowSums(peaks_tab_init)
@@ -154,14 +168,14 @@ p2=ggplot(pScaled_tab, aes(x=count_clip,y=value,fill=label))+geom_bar(stat = 'id
 
 
 p3=ggplot(peaks_tab, aes(x=label,y=value,fill=count_clip))+geom_bar(stat = 'identity',color='black')+
-  theme_bw()+scale_fill_brewer(palette="Blues")
+  theme_bw()+scale_fill_brewer(palette="Blues")+ggtitle('raw data-0.2')
 
 lScaled_tab <- t(peaks_tab_init)/colSums(peaks_tab_init)
 lScaled_tab <- .cleanTable(lScaled_tab)
 p4=ggplot(lScaled_tab, aes(x=label,y=value,fill=count_clip))+geom_bar(stat = 'identity',color='black')+
   theme_bw()+scale_fill_brewer(palette="Blues")+xlab('')+ylab('Freq')+ggtitle('scaled-by-labels')
 
-pdf('Data/MBNL1/called_peaks_analysis.pdf')
+pdf('Data/oldDataRefined/MBNL1/called_peaks_analysis.pdf')
 grid.arrange(p1, p2, nrow=1,ncol=2)
 grid.arrange(p3, p4, nrow=1,ncol=2)
 dev.off()
