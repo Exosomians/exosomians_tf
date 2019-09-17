@@ -66,7 +66,7 @@ class ExoFCN(Network):
                       kernel_regularizer=self.regularizer)(h)
             if self.use_batchnorm:
                 h = BatchNormalization(axis=1, trainable=True)(h)
-            h = LeakyReLU(h)
+            h = LeakyReLU()(h)
             if self.dr_rate > 0:
                 h = Dropout(self.dr_rate)(h)
 
