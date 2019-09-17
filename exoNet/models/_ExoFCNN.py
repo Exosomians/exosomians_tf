@@ -4,11 +4,11 @@ import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten, concatenate
+from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from keras.utils import to_categorical
 
-from exoNet.models._activations import ACTIVATIONS
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
 from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
@@ -29,7 +29,6 @@ class ExoFCNN(Network):
         self.loss_fn = kwargs.get("loss_fn", 'cce')
         self.lambda_l1 = kwargs.get('lambda_l1', 0.0)
         self.lambda_l2 = kwargs.get('lambda_l2', 0.0)
-        self.activations = kwargs.get("activations", 'relu')
         self.use_batchnorm = kwargs.get("use_batchnorm", False)
 
         self.sequence = Input(shape=(self.seq_len, self.n_channels,), name="sequences")
@@ -42,7 +41,6 @@ class ExoFCNN(Network):
             "n_classes": self.n_classes,
             "dropout_rate": self.dr_rate,
             "loss_fn": self.loss_fn,
-            "activations": self.activations,
             "use_batchnorm": self.use_batchnorm,
         }
 
@@ -69,7 +67,7 @@ class ExoFCNN(Network):
                        kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(self.sequence)
             if self.use_batchnorm:
                 h = BatchNormalization(trainable=True)(h)
-            h = ACTIVATIONS[self.activations](h)
+            h = LeakyReLU()(h)
             h = MaxPooling1D(pool_size=2)(h)
             if self.dr_rate > 0:
                 h = Dropout(self.dr_rate)(h)
@@ -81,7 +79,7 @@ class ExoFCNN(Network):
                       kernel_regularizer=self.regularizer)(self.mlp_x)
             if self.use_batchnorm:
                 h = BatchNormalization(trainable=True)(h)
-            h = ACTIVATIONS[self.activations](h)
+            h = LeakyReLU()(h)
             if self.dr_rate > 0:
                 h = Dropout(self.dr_rate)(h)
             return h
@@ -92,7 +90,7 @@ class ExoFCNN(Network):
                   kernel_regularizer=self.regularizer)(h)
         if self.use_batchnorm:
             h = BatchNormalization()(h)
-        h = ACTIVATIONS[self.activations](h)
+        h = LeakyReLU()(h)
         if self.dr_rate > 0:
             h = Dropout(self.dr_rate)(h)
 

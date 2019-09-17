@@ -29,7 +29,6 @@ class ExoCNN(Network):
         self.loss_fn = kwargs.get("loss_fn", 'cce')
         self.lambda_l1 = kwargs.get('lambda_l1', 0.0)
         self.lambda_l2 = kwargs.get('lambda_l2', 0.0)
-        self.activations = kwargs.get("activations", 'relu')
         self.use_batchnorm = kwargs.get("use_batchnorm", False)
 
         self.sequence = Input(shape=(self.seq_len, self.n_channels,), name="data")
@@ -40,7 +39,6 @@ class ExoCNN(Network):
             "n_classes": self.n_classes,
             "dropout_rate": self.dr_rate,
             "loss_fn": self.loss_fn,
-            "activations": self.activations,
             "use_batchnorm": self.use_batchnorm,
         }
 
