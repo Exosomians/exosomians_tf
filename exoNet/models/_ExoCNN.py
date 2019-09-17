@@ -5,11 +5,11 @@ import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten
+from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Model, load_model
 from keras.optimizers import Nadam, Adam
 from keras.utils import to_categorical
 
-from exoNet.models._activations import ACTIVATIONS
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
 from exoNet.utils import remove_sparsity, label_encoder, train_test_split_adata
@@ -66,28 +66,28 @@ class ExoCNN(Network):
                       kernel_regularizer=self.regularizer)(self.sequence)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
-        conv = ACTIVATIONS[self.activations](conv)
+        conv = LeakyReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
-        conv = ACTIVATIONS[self.activations](conv)
+        conv = LeakyReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
-        conv = ACTIVATIONS[self.activations](conv)
+        conv = LeakyReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
-        conv = ACTIVATIONS[self.activations](conv)
+        conv = LeakyReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         flat = Flatten()(max_pool)
@@ -95,7 +95,7 @@ class ExoCNN(Network):
         dense = Dense(32, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(flat)
         if self.use_batchnorm:
             dense = BatchNormalization()(dense)
-        dense = ACTIVATIONS[self.activations](dense)
+        dense = LeakyReLU()(dense)
         if self.dr_rate > 0:
             dense = Dropout(self.dr_rate)(dense)
 
