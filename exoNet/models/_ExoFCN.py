@@ -4,6 +4,7 @@ import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.layers import Input, Dense, BatchNormalization, Dropout
+from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Model, load_model
 from keras.optimizers import Nadam
 from keras.utils import to_categorical
@@ -27,7 +28,6 @@ class ExoFCN(Network):
         self.loss_fn = kwargs.get("loss_fn", 'cce')
         self.lambda_l1 = kwargs.get('lambda_l1', 0.0)
         self.lambda_l2 = kwargs.get('lambda_l2', 0.0)
-        self.activations = kwargs.get("activations", 'relu')
         self.use_batchnorm = kwargs.get("use_batchnorm", False)
         self.architecture = kwargs.get("architecture", [128, 32])
 
@@ -61,16 +61,13 @@ class ExoFCN(Network):
             self.model.summary()
 
     def _create_network(self):
+        h = self.x
         for idx, n_neuron in enumerate(self.architecture):
-            if idx == 0:
-                h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
-                          kernel_regularizer=self.regularizer)(self.x)
-            else:
-                h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
-                          kernel_regularizer=self.regularizer)(h)
+            h = Dense(n_neuron, kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(h)
             if self.use_batchnorm:
                 h = BatchNormalization(axis=1, trainable=True)(h)
-            h = ACTIVATIONS[self.activations](h)
+            h = LeakyReLU(h)
             if self.dr_rate > 0:
                 h = Dropout(self.dr_rate)(h)
 
