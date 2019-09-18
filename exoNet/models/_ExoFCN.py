@@ -99,7 +99,7 @@ class ExoFCN(Network):
         y_train, self.label_encoder = label_encoder(y_train, label_encoder=le)
         y_train = to_categorical(y_train, num_classes=self.n_classes)
 
-        y_valid, self.label_encoder = label_encoder(y_valid, abel_encoder=le)
+        y_valid, self.label_encoder = label_encoder(y_valid, label_encoder=le)
         y_valid = to_categorical(y_valid, num_classes=self.n_classes)
 
         callbacks = []

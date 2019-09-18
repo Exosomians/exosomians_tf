@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def train_test_split_data(data, labels=None, train_frac=0.85, stratify=True):
-    if labels:
+    if labels is not None:
         x_train, x_valid, y_train, y_valid = train_test_split(data, labels, test_size=1. - train_frac,
                                                               stratify=labels)
         return x_train, x_valid, y_train, y_valid

@@ -16,7 +16,6 @@ def seq_encoder(seq_data, char_encoder, max_len):
         encoded_sequences.append(encoded_sequence)
 
     encoded_sequences = pad_sequences(encoded_sequences, maxlen=max_len, padding='post', truncating='post', value=-1)
-
     onehot_sequences = []
     for encoded_sequence in encoded_sequences.tolist():
         onehot_sequence = [one_hot_encoder[enc] for enc in encoded_sequence]
