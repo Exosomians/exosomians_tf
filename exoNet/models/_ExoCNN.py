@@ -111,10 +111,8 @@ class ExoCNN(Network):
     def to_latent(self):
         pass
 
-    def predict(self, adata):
-        adata = remove_sparsity(adata)
-
-        return self.label_encoder.inverse_transform(np.argmax(self.model.predict(adata.X), axis=1))
+    def predict(self, data):
+        return self.label_encoder.inverse_transform(np.argmax(self.model.predict(data), axis=1))
 
     def save_model(self):
         self.model.save(os.path.join(self.model_path, f"{self.model_name}.h5"), overwrite=True)

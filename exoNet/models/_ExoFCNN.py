@@ -107,10 +107,8 @@ class ExoFCNN(Network):
     def to_latent(self):
         pass
 
-    def predict(self, adata):
-        adata = remove_sparsity(adata)
-
-        return self.label_encoder.inverse_transform(np.argmax(self.model.predict(adata.X), axis=1))
+    def predict(self, data):
+        return self.label_encoder.inverse_transform(np.argmax(self.model.predict(data), axis=1))
 
     def save_model(self):
         self.model.save(os.path.join(self.model_path, f"{self.model_name}.h5"), overwrite=True)
@@ -121,9 +119,6 @@ class ExoFCNN(Network):
 
     def train(self, seq_adata, fcn_adata, label_key, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
               lr_reducer_kwargs={}, verbose=2):
-        seq_adata = remove_sparsity(seq_adata)
-        fcn_adata = remove_sparsity(fcn_adata)
-
         train_labels, self.label_encoder = label_encoder(fcn_adata, label_key=label_key, label_encoder=le)
         train_labels = to_categorical(train_labels, num_classes=self.n_classes)
 
