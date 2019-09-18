@@ -2,14 +2,23 @@ import numpy as np
 from keras_preprocessing.sequence import pad_sequences
 
 
-def seq_encoder(seq_data, char_encoder, max_len):
-    one_hot_encoder = {
-        -1: [0.25 for i in range(len(char_encoder.keys()) - 1)],
-        0: [0 for i in range(0)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 0)],
-        1: [0 for i in range(1)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 1)],
-        2: [0 for i in range(2)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 2)],
-        3: [0 for i in range(3)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 3)],
-    }
+def seq_encoder(seq_data, char_encoder, max_len, unknown_char=True):
+    if unknown_char:
+        one_hot_encoder = {
+            -1: [0.25 for i in range(len(char_encoder.keys()) - 1)],
+            0: [0 for i in range(0)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 0)],
+            1: [0 for i in range(1)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 1)],
+            2: [0 for i in range(2)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 2)],
+            3: [0 for i in range(3)] + [1] + [0 for i in range(len(char_encoder.keys()) - 2 - 3)],
+        }
+    else:
+        one_hot_encoder = {
+            -1: [0.25 for i in range(len(char_encoder.keys()))],
+            0: [0 for i in range(0)] + [1] + [0 for i in range(len(char_encoder.keys()) - 1 - 0)],
+            1: [0 for i in range(1)] + [1] + [0 for i in range(len(char_encoder.keys()) - 1 - 1)],
+            2: [0 for i in range(2)] + [1] + [0 for i in range(len(char_encoder.keys()) - 1 - 2)],
+            3: [0 for i in range(3)] + [1] + [0 for i in range(len(char_encoder.keys()) - 1 - 3)],
+        }
     encoded_sequences = []
     for sequence in seq_data:
         encoded_sequence = [char_encoder[char] for char in sequence]
