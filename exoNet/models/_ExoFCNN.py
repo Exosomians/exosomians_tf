@@ -117,7 +117,7 @@ class ExoFCNN(Network):
         self.model = load_model(os.path.join(self.model_path, f"{self.model_name}.h5"), compile=False)
         self._compile_models()
 
-    def train(self, seq_adata, fcn_adata, labels, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
+    def train(self, seq_data, fcn_data, labels, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
               lr_reducer_kwargs={}, verbose=2):
         train_labels, self.label_encoder = label_encoder(labels, label_encoder=le)
         train_labels = to_categorical(train_labels, num_classes=self.n_classes)
@@ -130,7 +130,7 @@ class ExoFCNN(Network):
         if lr_reducer_kwargs != {}:
             callbacks.append(ReduceLROnPlateau(**lr_reducer_kwargs))
 
-        x_train = [seq_adata.X.reshape(shape=(-1, self.seq_len, self.n_channels)), fcn_adata.X]
+        x_train = [seq_data.reshape(shape=(-1, self.seq_len, self.n_channels)), fcn_data]
         y_train = train_labels
 
         self.model.fit(x=x_train,

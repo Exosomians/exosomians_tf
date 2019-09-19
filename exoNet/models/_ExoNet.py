@@ -138,7 +138,7 @@ class ExoNet(Network):
         if lr_reducer_kwargs != {}:
             callbacks.append(ReduceLROnPlateau(**lr_reducer_kwargs))
 
-        x_train = [seq_data.X.reshape(shape=(-1, self.seq_len, self.n_channels)), fcn_data.X]
+        x_train = [seq_data.reshape(shape=(-1, self.seq_len, self.n_channels)), fcn_data]
         y_train = train_labels
 
         self.model.fit(x=x_train,
