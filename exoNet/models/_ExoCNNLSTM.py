@@ -70,8 +70,6 @@ class ExoCNNLSTM(Network):
         h = LSTM(16, activation='linear', return_sequences=False)(h)  # (None, 16)
         h = LeakyReLU()(h)
 
-        h = Flatten()(h)
-
         h = Dense(32, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(h)
         if self.use_batchnorm:
             h = BatchNormalization()(h)
