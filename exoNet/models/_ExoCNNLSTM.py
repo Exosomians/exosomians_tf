@@ -105,6 +105,12 @@ class ExoCNNLSTM(Network):
               lr_reducer_kwargs={}, verbose=2):
         x_train, x_valid, y_train, y_valid = train_test_split_data(seq_data, labels, 0.80)
 
+        y_train, self.label_encoder = label_encoder(y_train, label_encoder=le)
+        y_train = to_categorical(y_train, num_classes=self.n_classes)
+
+        y_valid, self.label_encoder = label_encoder(y_valid, label_encoder=le)
+        y_valid = to_categorical(y_valid, num_classes=self.n_classes)
+
         callbacks = []
 
         if early_stopping_kwargs != {}:
