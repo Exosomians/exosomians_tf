@@ -23,7 +23,7 @@ or install the development version via pip:
 pip install git+https://github.com/saberi1/Exosomians.git
 ```
 
-or you can first install flit and clone this repository:
+or you can clone this repository and install via setup.py file:
 ```bash
 git clone https://github.com/saberi1/Exosomians
 cd Exosomians
