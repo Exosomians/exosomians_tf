@@ -121,7 +121,7 @@ class ExoCNN(Network):
         self.model = load_model(os.path.join(self.model_path, f"{self.model_name}.h5"), compile=False)
         self._compile_models()
 
-    def train(self, seq_data, labels, label_key, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
+    def train(self, seq_data, labels, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
               lr_reducer_kwargs={}, verbose=2):
         x_train, x_valid, y_train, y_valid, valid_adata = train_test_split_data(seq_data, labels, 0.80, stratify=True)
 
