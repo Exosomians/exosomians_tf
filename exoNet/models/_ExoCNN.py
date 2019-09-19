@@ -123,7 +123,7 @@ class ExoCNN(Network):
 
     def train(self, seq_data, labels, le=None, n_epochs=500, batch_size=32, early_stopping_kwargs={},
               lr_reducer_kwargs={}, verbose=2):
-        x_train, x_valid, y_train, y_valid, valid_adata = train_test_split_data(seq_data, labels, 0.80, stratify=True)
+        x_train, x_valid, y_train, y_valid = train_test_split_data(seq_data, labels, 0.80, stratify=True)
 
         y_train, self.label_encoder = label_encoder(y_train, label_encoder=le)
         y_train = to_categorical(y_train, num_classes=self.n_classes)
