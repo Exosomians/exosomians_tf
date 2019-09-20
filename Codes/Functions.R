@@ -76,8 +76,12 @@ MakeKmerForDotBracket <- function(nucleotide, dotbracket, kmerSize){
 
 MakeFeatureSpecificMatrix <- function(All_possible_features, extractedFromData, id){
   
-  MatchData2Features <- sapply(1:length(extractedFromData), 
-                               function(i) table(factor(extractedFromData[[i]], levels = All_possible_features )) ,simplify = F)
+  ## Parallelized it
+  # MatchData2Features <- sapply(1:length(extractedFromData), 
+  #                             function(i) table(factor(extractedFromData[[i]], levels = All_possible_features )) ,simplify = F)
+  
+  MatchData2Features <- mclapply(1:length(extractedFromData), 
+                                 function(i) table(factor(extractedFromData[[i]], levels = All_possible_features)), mc.cores = detectCores()-2)
   
   FeatureMatrix <- as.data.frame(do.call(rbind, MatchData2Features))
   colnames(FeatureMatrix) <- All_possible_features
