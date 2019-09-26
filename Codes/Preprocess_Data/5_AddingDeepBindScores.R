@@ -1,6 +1,7 @@
 
-# Required Libraries: parallel
+# Required Libraries: parallel, stringr
 library(parallel)
+library(stringr)
 
 options(stringsAsFactors = F)
 
@@ -8,7 +9,11 @@ SEED = 1
 THREADS = detectCores()-2
 
 DESIGN_MATRIX_PREP4 = 'Data/oldDataRefined/DesignMatrices/4_DesignMat_SS_Kmer_Label.csv'
-# DESIGN_MATRIX_PREP5
+DESIGN_MATRIX_PREP5 = 'Data/oldDataRefined/DesignMatrices/5_DesignMat_SS_Kmer_Deepbind_Label.csv'
+
+seqsLen = nchar(designMatrix$seq)
+dotBrsLen = nchar(designMatrix$DB)
+identical(seqsLen, dotBrsLen)
 
 
 source('Codes/Functions.R')
@@ -60,16 +65,16 @@ write.table(designMatrix$seq, file = 'Apps/deepbind/sequences.seq',
 # rm models.ids
 # (CAUTION: Run the code below in a TMUX environment! It might take a while...)
 # for model in *.ids; do ../deepbind $model < ../sequences.seq > ${model/.ids/.output} & done
+# paste *.output | column -s $'\t' -tn > all.output
 
 ## run deepbind script and import the results
-deepbind <- read.table('Data/oldDataRefined/deepbind/deepBind_refined.txt', header = T)
+# deepbind <- read.table('Data/oldDataRefined/deepbind/deepBind_refined.txt', header = T)
 
-designMatrix <- cbind(designMatrix, deepbind)
-write.csv(designMatrix,'Data/oldDataRefined/DesignMatrices/5_DesignMat_SS_Kmer_DB_Label.csv',quote = F,row.names = F)
+deepbindScores = read.table('Apps/deepbind/models/all.output', header = T)
+designMatrix <- cbind(designMatrix, deepbindScores)
 
-### mapping deepbind ids to their protein-family names to be more readable 
-DeepBind_ids <- read.delim('Data/oldDataRefined/deepbind/models.ids', header=F)
-DeepBind_ids <- subset(data.frame(str_split_fixed(DeepBind_ids$V1,' ' ,3)), select=-X2)
-names(DeepBind_ids) <- c('id', 'protein_name')
-write.csv(DeepBind_ids, 'Data/oldDataRefined/deepbind/deepBind_dictionary.csv',quote = F,row.names = F)
+write.csv(designMatrix, DESIGN_MATRIX_PREP5, quote = F,row.names = F)
 
+### Mapping deepbind ids to their protein-family names to be more readable 
+deepbindDictionary = deepbindModels[deepbindModels$ID %in% deepbindAvailableModels, ]
+write.csv(deepbindDictionary, 'Apps/deepbind/deepBindDictionary.csv', quote = F, row.names = F)

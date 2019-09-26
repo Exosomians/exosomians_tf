@@ -3,6 +3,19 @@
 
 ## for more information about these annotations, please check: https://viennarna.github.io/forgi/graph_tutorial.html
 
+# Required Libraries: 
+
+options(stringsAsFactors = F)
+
+SEED = 1
+# THREADS = detectCores()-2
+
+# DESIGN_MATRIX_PREP5 = 'Data/oldDataRefined/DesignMatrices/5_DesignMat_SS_Kmer_Deepbind_Label.csv'
+DESIGN_MATRIX_PREP6 = 'Data/oldDataRefined/DesignMatrices/6_DesignMat_SS_Kmer_Deepbind_Forgi_Label.csv'
+DESIGN_MATRIX_PREP7 = 'Data/oldDataRefined/DesignMatrices/7_DesignMat_SS_Kmer_Deepbind_ForgiAnnoted_Label.csv'
+
+SECONDARY_STRUCTURES_BULGE_GRAPH = 'Data/oldDataRefined/SecondStruct/annotation_features.csv'
+
 source('Codes/Functions.R')
 Initialize()
 
@@ -37,11 +50,9 @@ Initialize()
 }
 
 
-## import data 
-# data <- read.csv('Data/MergedDesignMatLabel_SecondStruct_LenFilter_forgi_element_string.csv', stringsAsFactors = F)
-data <- read.csv('Data/oldDataRefined/DesignMatrices/6_DesignMat_SS_Kmer_DB_Forgi_Label.csv', stringsAsFactors = F)
-annotations <- data$element_string
-
+## Import data 
+designMatrix <- read.csv(DESIGN_MATRIX_PREP6, stringsAsFactors = F)
+annotations <- designMatrix$element_string
 
 motifCounts <- data.frame(do.call(rbind, lapply(annotations, .getNumberOfMotifs)))
 colnames(motifCounts) <- c('fiveprime', 'threeprime', 'stem', 'interior_loop', 'multiloop', 'hairpin')
@@ -50,10 +61,9 @@ longestHairpins <- unlist(lapply(annotations, .getLongestMotif, 'h'))
 longestStemLoop <- unlist(lapply(annotations, .getLongestMotif, 's'))
 
 annotation_features <- data.frame(cbind(motifCounts, longestHairpins, longestStemLoop))
-write.csv(annotation_features, 'Data/oldDataRefined/SecondStruct/annotation_features.csv', row.names = F)
+write.csv(annotation_features, SECONDARY_STRUCTURES_BULGE_GRAPH, row.names = F)
 
-
-write.csv(cbind(subset(data,select=-element_string_number), annotation_features),
-          'Data/oldDataRefined/DesignMatrices/7_DesignMat_SS_Kmer_DB_ForgiAnnot_Label.csv', row.names=F)
+write.csv(cbind(subset(designMatrix,select=-element_string_number), annotation_features),
+          DESIGN_MATRIX_PREP7, row.names=F)
 
 
