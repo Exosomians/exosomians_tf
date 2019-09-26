@@ -16,7 +16,7 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 ANNOTATION_DATA_DIR = 'Data/oldDataRefined/Counts_and_Beds'
 annotsPath <- list.files(ANNOTATION_DATA_DIR, pattern = '*.bed',full.names = T)
 annotFile <- read.delim(annotsPath, header = F)
-colnames(annotFile) <- c('seqnames', 'start', 'end', 'name', 'score', 'strand')
+colnames(annotFile) <- c('seqnames', 'start', 'name', 'name', 'score', 'strand')
 
 
 ## add strand in the id notation and re-generate the designMats 
