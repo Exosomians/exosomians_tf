@@ -130,7 +130,7 @@ class ExoFCNN(Network):
         if lr_reducer_kwargs != {}:
             callbacks.append(ReduceLROnPlateau(**lr_reducer_kwargs))
 
-        x_train = [seq_data.reshape((-1, self.seq_len, self.n_channels)), fcn_data]
+        x_train = [np.reshape(seq_data, (-1, self.seq_len, self.n_channels)), fcn_data]
         y_train = train_labels
 
         self.model.fit(x=x_train,
