@@ -3,19 +3,29 @@ import csv
 import forgi
 import forgi.graph.bulge_graph as fgb
 
-with open('MergedDesignMatLabel.csv', 'r') as csv_input:
-	with open('MergedDesignMatLabel_sec_struct.csv', 'w') as csv_output:
+
+with open('5_DesignMat_SS_Kmer_Deepbind_Label.csv', 'r') as csv_input:
+	with open('6_DesignMat_SS_Kmer_Deepbind_Label_sec_struct.csv', 'w') as csv_output:
 		readCSV = csv.reader(csv_input, delimiter=',')
 		writeCSV = csv.writer(csv_output, lineterminator='\n', delimiter=',')
-		all_col = []
+		# all_col = []
 		row = next(readCSV)
 		row.append('element_string')
 		row.append('element_string_number')
-		all_col.append(row)
+		writeCSV.writerow(row)
+		# all_col.append(row)
 		for row in readCSV:
-			print(row[0])
-			seq = row[3]
-			dotbracket = row[306]
+			# print(row[0])
+			seq = row[2]
+			# print('seq')
+			# print(seq)
+			dotbracket = row[14]
+			# print("dotbracket:")
+			# print(dotbracket)
+			if len(seq) != len(dotbracket):
+				print('Different Lengths, failed:')
+				print(row)
+				continue
 			tmp_file = open("tmp.txt","w")
 			tmp_file.write(seq + '\n')
 			tmp_file.write(dotbracket + '\n')
@@ -25,11 +35,9 @@ with open('MergedDesignMatLabel.csv', 'r') as csv_input:
 			result = result.splitlines()
 			row.append(str(result[0]))
 			row.append(str(result[1]))
-			all_col.append(row)
-		writeCSV.writerows(all_col)
-
-
-
+			writeCSV.writerow(row)
+			# all_col.append(row)
+		# writeCSV.writerows(all_col)
 
 
 
