@@ -25,6 +25,65 @@ THREADS = detectCores()-2
 
 ## Region Extraction
 
+```{bash}
+## Bash
+## sort all IC and EV bams
+for f in IC/*.bam; do
+  out="$f.sort.bam"
+  samtools sort -o $out $f
+done
+for f in EV/*.bam; do
+  out="$f.sort.bam"
+  samtools sort -o $out $f
+done
+# merge all IC bams
+samtools merge all_ICs_combined.sort.bam IC/*.sort.bam
+
+# extract regions with minimum coverage threshold for each negative and positive strands separately
+bedtools genomecov -ibam all_ICs_combined.sort.bam -bg -strand + | awk '$4>20' > pos_strand_covered_regions.bed
+bedtools genomecov -ibam all_ICs_combined.sort.bam -bg -strand - | awk '$4>20' > neg_strand_covered_regions.bed
+
+# filter regions by max 500 and min 18 length
+bedtools merge -i pos_strand_covered_regions.bed | awk '($3-$2)<=500' > tmp_pos_inrange.bed
+bedtools merge -i tmp_pos_inrange.bed | awk '($3-$2)>=18' > pos_inrange_covered_regions.bed
+bedtools merge -i neg_strand_covered_regions.bed | awk '($3-$2)<=500' > tmp_neg_inrange.bed
+bedtools merge -i tmp_neg_inrange.bed | awk '($3-$2) >=18' > neg_inrange_covered_regions.bed
+
+rm tmp_pos_inrange.bed
+rm tmp_neg_inrange.bed
+```
+
+```{python}
+## Python
+
+# add name, score and strand column
+# all name and score values are . and 0 repectively
+with open(pos_inrange_covered_regions.bed, 'r') as istrp:
+  with open(pos_inrange_covered_regions_stranded.bed, 'w') as ostrp:
+    for line in istrp:
+      line = line.rstrip('\n') + '\t.\t0\t+'
+      print(line, file=ostrp)
+
+with open(neg_inrange_covered_regions.bed, 'r') as istrn:
+  with open(neg_inrange_covered_regions_stranded.bed, 'w') as ostrn:
+    for line in istrn:
+      line = line.rstrip('\n') + '\t.\t0\t-'
+      print(line, file=ostrn)
+```
+
+```{bash}
+## Bash
+
+# combine and sort two different stranded bed files
+cat pos_inrange_covered_regions_stranded.bed neg_inrange_covered_regions_stranded.bed | bedtools sort -i stdin > all_inrange_covered_regions_stranded.bed
+
+# Quantify EV count file
+bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b EV/*.sort.bam > EV_counts.txt
+
+# Quantify IC count file
+bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b IC/*.sort.bam > IC_counts.txt
+```
+
 ## Region Labeling
 
 ## Sequence Extraction and Refinement

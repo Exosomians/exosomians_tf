@@ -6,7 +6,7 @@ output: html_notebook
 ```{r}
 ## R
 options(stringsAsFactors = F)
-
+# setwd('~/R/Projects/Sharif/exosomians/')
 source('Codes/Functions.R')
 Initialize()
 
@@ -23,20 +23,71 @@ THREADS = detectCores()-2
 ## Read Alignment
 **Aligning reads to reference assembly (hg38)**
 
-Code: bash
-Tools: hisat2
-
 ## Region Extraction
-Code: bash
-Tools: bedtools
+
+```{bash}
+## Bash
+## sort all IC and EV bams
+for f in IC/*.bam; do
+  out="$f.sort.bam"
+  samtools sort -o $out $f
+done
+for f in EV/*.bam; do
+  out="$f.sort.bam"
+  samtools sort -o $out $f
+done
+# merge all IC bams
+samtools merge all_ICs_combined.sort.bam IC/*.sort.bam
+
+# extract regions with minimum coverage threshold for each negative and positive strands separately
+bedtools genomecov -ibam all_ICs_combined.sort.bam -bg -strand + | awk '$4>20' > pos_strand_covered_regions.bed
+bedtools genomecov -ibam all_ICs_combined.sort.bam -bg -strand - | awk '$4>20' > neg_strand_covered_regions.bed
+
+# filter regions by max 500 and min 18 length
+bedtools merge -i pos_strand_covered_regions.bed | awk '($3-$2)<=500' > tmp_pos_inrange.bed
+bedtools merge -i tmp_pos_inrange.bed | awk '($3-$2)>=18' > pos_inrange_covered_regions.bed
+bedtools merge -i neg_strand_covered_regions.bed | awk '($3-$2)<=500' > tmp_neg_inrange.bed
+bedtools merge -i tmp_neg_inrange.bed | awk '($3-$2) >=18' > neg_inrange_covered_regions.bed
+
+rm tmp_pos_inrange.bed
+rm tmp_neg_inrange.bed
+```
+
+```{python}
+## Python
+
+# add name, score and strand column
+# all name and score values are . and 0 repectively
+with open(pos_inrange_covered_regions.bed, 'r') as istrp:
+  with open(pos_inrange_covered_regions_stranded.bed, 'w') as ostrp:
+    for line in istrp:
+      line = line.rstrip('\n') + '\t.\t0\t+'
+      print(line, file=ostrp)
+
+with open(neg_inrange_covered_regions.bed, 'r') as istrn:
+  with open(neg_inrange_covered_regions_stranded.bed, 'w') as ostrn:
+    for line in istrn:
+      line = line.rstrip('\n') + '\t.\t0\t-'
+      print(line, file=ostrn)
+```
+
+```{bash}
+## Bash
+
+# combine and sort two different stranded bed files
+cat pos_inrange_covered_regions_stranded.bed neg_inrange_covered_regions_stranded.bed | bedtools sort -i stdin > all_inrange_covered_regions_stranded.bed
+
+# Quantify EV count file
+bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b EV/*.sort.bam > EV_counts.txt
+
+# Quantify IC count file
+bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b IC/*.sort.bam > IC_counts.txt
+```
 
 ## Region Labeling
-Code: bash
-Tools: bedtools
 
 ## Sequence Extraction and Refinement
-Code: R
-Packages: BSgenome.Hsapiens.UCSC.hg38
+
 ```{r}
 # R
 # Required Libraries: parallel, Biostrings
@@ -330,4 +381,104 @@ rownames(RNAsecondaryStructFeatures) <- NULL
 ## Merging the design matrix (filtered based on min-length=18) with secondary structures
 TotalMatrixWithStruct <- merge(designMatrix, RNAsecondaryStructFeatures, by.x='id',by.y='id',all.x=T)
 write.csv(TotalMatrixWithStruct, DESIGN_MATRIX_PREP3, row.names = F)
+```
+
+### 4-mer
+**Not needed**
+
+## Secondary Structure
+
+### Single Features
+
+```{python}
+import csv
+
+import forgi
+import forgi.graph.bulge_graph as fgb
+
+with open('5_DesignMat_SS_Kmer_Deepbind_Label.csv', 'r') as csv_input:
+	with open('6_DesignMat_SS_Kmer_Deepbind_Label_sec_struct.csv', 'w') as csv_output:
+		readCSV = csv.reader(csv_input, delimiter=',')
+		writeCSV = csv.writer(csv_output, lineterminator='\n', delimiter=',')
+		row = next(readCSV)
+		row.append('element_string')
+		row.append('element_string_number')
+		writeCSV.writerow(row)
+		for row in readCSV:
+			seq = row[2]
+			dotbracket = row[14]
+			if len(seq) != len(dotbracket):
+				print('Different Lengths, failed:')
+				print(row)
+				continue
+			tmp_file = open("tmp.txt","w")
+			tmp_file.write(seq + '\n')
+			tmp_file.write(dotbracket + '\n')
+			tmp_file.close()
+			cg = forgi.load_rna('tmp.txt', allow_many=False)
+			result = fgb.BulgeGraph.to_element_string(cg, with_numbers=True)
+			result = result.splitlines()
+			row.append(str(result[0]))
+			row.append(str(result[1]))
+			writeCSV.writerow(row)
+```
+
+### Longest Features
+```{r}
+DESIGN_MATRIX_PREP6 = 'Data/oldDataRefined/DesignMatrices/6_DesignMat_SS_Kmer_Deepbind_Forgi_Label.csv'
+DESIGN_MATRIX_PREP7 = 'Data/oldDataRefined/DesignMatrices/7_DesignMat_SS_Kmer_Deepbind_ForgiAnnoted_Label.csv'
+
+SECONDARY_STRUCTURES_BULGE_GRAPH = 'Data/oldDataRefined/SecondStruct/annotation_features.csv'
+
+source('Codes/Functions.R')
+Initialize()
+
+.getNumberOfMotifs <- function(String){
+  values <- replicate(6, 0)
+  names(values) <-  c('f', 't', 's', 'i' , 'm', 'h' )
+  for (i in 1:nchar(String)){
+    if( substr(String, i, i) != substr(String, i-1, i-1) | i==1) values[substr(String,i,i)] = values[substr(String,i,i)]+1 
+  } 
+  return(values)
+}
+
+
+.getLongestMotif <- function(String, motif){
+  i = 0 
+  max_hairpin = 0 
+  while (i < nchar(String)){
+    counter = 0
+    if (substr(String,i,i) == motif){
+      counter = counter + 1
+      for (j in i+1:nchar(String) ){
+        if (substr(String,j,j) == motif ) counter = counter + 1
+        else break
+      }
+      #print(paste0('inner ', motif ,' length is: ', counter))
+      if(max_hairpin<counter) max_hairpin = counter
+      i = i + counter
+    }
+    else i = i + 1
+  }
+  return(max_hairpin)
+}
+
+
+## Import data 
+designMatrix <- read.csv(DESIGN_MATRIX_PREP6, stringsAsFactors = F)
+annotations <- designMatrix$element_string
+
+motifCounts <- data.frame(do.call(rbind, lapply(annotations, .getNumberOfMotifs)))
+colnames(motifCounts) <- c('fiveprime', 'threeprime', 'stem', 'interior_loop', 'multiloop', 'hairpin')
+
+longestHairpins <- unlist(lapply(annotations, .getLongestMotif, 'h'))
+longestStemLoop <- unlist(lapply(annotations, .getLongestMotif, 's'))
+
+annotation_features <- data.frame(cbind(motifCounts, longestHairpins, longestStemLoop))
+write.csv(annotation_features, SECONDARY_STRUCTURES_BULGE_GRAPH, row.names = F)
+
+write.csv(cbind(subset(designMatrix,select=-element_string_number), annotation_features),
+          DESIGN_MATRIX_PREP7, row.names=F)
+
+
 ```
