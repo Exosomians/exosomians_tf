@@ -27,7 +27,7 @@ THREADS = detectCores()-2
 
 ```{bash}
 ## Bash
-## sort all IC and EV bams
+# sort all IC and EV bams
 for f in IC/*.bam; do
   out="$f.sort.bam"
   samtools sort -o $out $f
@@ -38,6 +38,10 @@ for f in EV/*.bam; do
 done
 # merge all IC bams
 samtools merge all_ICs_combined.sort.bam IC/*.sort.bam
+
+# check number of all reads to find a reasonable coverage threshold proportional to the total read numbers
+# final threshold is max of 5 and the proportional threshold
+samtools flagstat all_ICs_combined.sort.bam
 
 # extract regions with minimum coverage threshold for each negative and positive strands separately
 bedtools genomecov -ibam all_ICs_combined.sort.bam -bg -strand + | awk '$4>20' > pos_strand_covered_regions.bed
@@ -84,7 +88,112 @@ bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b EV/*.sort.ba
 bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b IC/*.sort.bam > IC_counts.txt
 ```
 
+##### Generating YBX1 count file
+```{bash}
+# Bash
+# merging all YBX1 bam files
+samtools merge YBX1_merged_sorted.bam YBX1_CLIP/shID-1-CATCAGGT_sorted.bam YBX1_CLIP/shID-2-CTCTGAGA_sorted.bam YBX1_CLIP/shID-3-TGAGCTGT_sorted.bam
+
+# apply 5 minimum coverage threshold for each strand separately
+bedtools genomecov -ibam YBX1_merged_sorted.bam -bg -strand + | awk '$4>5' > pos_strand_covered_regions.bed
+bedtools genomecov -ibam YBX1_merged_sorted.bam -bg -strand - | awk '$4>5' > neg_strand_covered_regions.bed
+
+# apply 5 minimum length filter
+bedtools merge -i pos_strand_covered_regions.bed | awk '($3-$2)>5' > pos_covered_inrange.bed
+bedtools merge -i neg_strand_covered_regions.bed | awk '($3-$2)>5' > neg_covered_inrange.bed
+```
+
+```{python}
+# Python
+
+# add name, score and strand column
+# all name and score values are . and 0 repectively
+with open('pos_covered_inrange.bed', 'r') as istrp:
+	with open('neg_covered_inrange_stranded.bed', 'w') as ostrp:
+		for line in istrp:
+			line = line.rstrip('\n') + '\t.\t0\t-'
+			print(line, file=ostrp)
+with open('neg_covered_inrange.bed', 'r') as istrn:
+	with open('neg_covered_inrange_stranded.bed', 'w') as ostrn:
+		for line in istrn:
+			line = line.rstrip('\n') + '\t.\t0\t-'
+			print(line, file=ostrn)
+```
+
+```{bash}
+# Bash
+
+# combine and sort two different stranded bed files
+cat pos_covered_inrange_stranded.bed neg_covered_inrange_stranded.bed | bedtools sort -i stdin > all_inrange_covered_regions_stranded.bed
+# generate YBX1 count files
+bedtools coverage -s -a all_inrange_covered_regions_stranded.bed -b YBX1_CLIP/*_sorted.bam > YBX1_counts.txt
+```
+
 ## Region Labeling
+
+#### TCGA regions preprocessing
+```{bash}
+# filter minimum coverage thershold 10
+cat all_merged_neg_strand_covered_regions_th10.bed | awk '$4>10' > neg_covered_regions.bed
+cat all_merged_pos_strand_covered_regions_th10.bed | awk '$4>10' > pos_covered_regions.bed
+
+# filter regions by min 18 length
+bedtools merge -i neg_covered_regions.bed | awk '($3-$2)>18' > neg_covered_inrange_regions.bed
+bedtools merge -i pos_covered_regions.bed | awk '($3-$2)>18' > pos_covered_inrange_regions.bed
+```
+
+```{python}
+# Python
+
+# add name, score and strand column
+# all name and score values are . and 0 repectively
+with open('neg_covered_inrange_regions.bed', 'r') as istrp:
+	with open('neg_covered_inrange_regions_stranded.bed', 'w') as ostrp:
+		for line in istrp:
+			line = line.rstrip('\n') + '\t.\t0\t-'
+			print(line, file=ostrp)
+with open('pos_covered_inrange_regions.bed', 'r') as istrn:
+	with open('pos_covered_inrange_regions_stranded.bed', 'w') as ostrn:
+		for line in istrn:
+			line = line.rstrip('\n') + '\t.\t0\t-'
+			print(line, file=ostrn)
+```
+
+```{bash}
+# Bash
+
+# combine and sort two different stranded bed files
+cat pos_covered_inrange_regions_stranded.bed neg_covered_inrange_regions_stranded.bed | bedtools sort -i stdin > tcga_inrage_coverd_regions.bed
+```
+
+#### Serum regions preprocessing
+
+```{bash}
+# Bash
+
+# combine pos regions
+cat sample_Serum_1_fastq.srt.bed sample_Serum_2_fastq.srt.bed sample_Serum_4_fastq.srt.bed sample_Serum_5_fastq.srt.bed sample_Serum_6_fastq.srt.bed sample_Serum_7_fastq.srt.bed sample_Serum_8_fastq.srt.bed sample_Serum_9_fastq.srt.bed sample_Serum_10_fastq.srt.bed sample_Serum_11_fastq.srt.bed sample_Serum_12_fastq.srt.bed | bedtools merge -S + -i stdin > all_serum_combined_pos_stranded.bed
+
+# combine pos regions
+cat sample_Serum_1_fastq.srt.bed sample_Serum_2_fastq.srt.bed sample_Serum_4_fastq.srt.bed sample_Serum_5_fastq.srt.bed sample_Serum_6_fastq.srt.bed sample_Serum_7_fastq.srt.bed sample_Serum_8_fastq.srt.bed sample_Serum_9_fastq.srt.bed sample_Serum_10_fastq.srt.bed sample_Serum_11_fastq.srt.bed sample_Serum_12_fastq.srt.bed | bedtools merge -S - -i stdin > all_serum_combined_neg_stranded.bed
+```
+
+filter on length and combine neg and pos strand files like above, to have all_serum_regions_stranded.bed file.
+
+```{bash}
+# Bash
+
+# subtract serum from IC regions
+# keep regions with at least length 10 to be meaningful
+bedtools subtract -a all_serum_regions_stranded.bed -b all_inrange_covered_regions_stranded.bed -s | awk '($3-$2)>10' > serum_subtract_IC_regions_l10.bed
+
+# get union of IC and serum regions
+cat all_serum_regions_stranded.bed all_inrange_covered_regions_stranded.bed | bedtools merge -i stdin -s > serum_U_IC_regions.bed
+
+# subtract the union of IC and serum from TCGA regions
+# keep regions with at least length 10 to be meaningful
+bedtools subtract -a tcga_inrage_coverd_regions.bed -b serum_U_IC_regions.bed -s | awk '($3-$2)>10' > tcga_subtract_serum_U_IC_regions_l10.bed
+```
 
 ## Sequence Extraction and Refinement
 
