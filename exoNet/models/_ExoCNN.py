@@ -62,15 +62,24 @@ class ExoCNN(Network):
     def _create_network(self):
         conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(self.sequence)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+
         conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = LeakyReLU()(conv)
+
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+
         conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
@@ -80,15 +89,24 @@ class ExoCNN(Network):
 
         conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+
         conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = LeakyReLU()(conv)
+
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
         conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+
         conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
@@ -111,7 +129,6 @@ class ExoCNN(Network):
             dense = Dropout(self.dr_rate)(dense)
 
         output = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer,
-                       bias_initializer=keras.initializers.Constant(-math.log((1 - 0.01) / 0.01)),
                        activation='softmax')(dense)
 
         self.model = Model(inputs=self.sequence, outputs=output)
@@ -160,3 +177,5 @@ class ExoCNN(Network):
                        verbose=verbose,
                        callbacks=callbacks,
                        )
+
+        self.save_model()
