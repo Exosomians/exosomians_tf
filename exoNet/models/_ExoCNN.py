@@ -8,7 +8,7 @@ from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxP
 from keras.models import Model, load_model
 from keras.optimizers import Nadam, Adam
 from keras.utils import to_categorical
-from tensorflow.python.keras.layers import ReLU
+from keras.layers import ReLU
 
 from exoNet.models._losses import METRICS, LOSSES
 from exoNet.models._network import Network
