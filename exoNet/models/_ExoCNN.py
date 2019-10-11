@@ -60,8 +60,28 @@ class ExoCNN(Network):
             self.model.summary()
 
     def _create_network(self):
-        conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=8, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(self.sequence)
+        conv = Conv1D(filters=8, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(conv)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+        max_pool = MaxPooling1D(pool_size=2)(conv)
+
+        conv = Conv1D(filters=8, kernel_size=6, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(max_pool)
+        conv = Conv1D(filters=8, kernel_size=6, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(conv)
+        if self.use_batchnorm:
+            conv = BatchNormalization(trainable=True)(conv)
+        conv = LeakyReLU()(conv)
+        max_pool = MaxPooling1D(pool_size=2)(conv)
+
+        conv = Conv1D(filters=8, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(max_pool)
+        conv = Conv1D(filters=8, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                      kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = LeakyReLU()(conv)
@@ -69,20 +89,8 @@ class ExoCNN(Network):
 
         conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
-        if self.use_batchnorm:
-            conv = BatchNormalization(trainable=True)(conv)
-        conv = LeakyReLU()(conv)
-        max_pool = MaxPooling1D(pool_size=2)(conv)
-
         conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
-                      kernel_regularizer=self.regularizer)(max_pool)
-        if self.use_batchnorm:
-            conv = BatchNormalization(trainable=True)(conv)
-        conv = LeakyReLU()(conv)
-        max_pool = MaxPooling1D(pool_size=2)(conv)
-
-        conv = Conv1D(filters=8, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
-                      kernel_regularizer=self.regularizer)(max_pool)
+                      kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = LeakyReLU()(conv)
