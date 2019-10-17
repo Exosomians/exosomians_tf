@@ -30,6 +30,7 @@ class ExoCNN(Network):
         self.lambda_l1 = kwargs.get('lambda_l1', 0.0)
         self.lambda_l2 = kwargs.get('lambda_l2', 0.0)
         self.use_batchnorm = kwargs.get("use_batchnorm", False)
+        self.padding = kwargs.get("padding", "valid")
 
         self.sequence = Input(shape=(self.seq_len, self.n_channels,), name="data")
 
@@ -62,13 +63,13 @@ class ExoCNN(Network):
             self.model.summary()
 
     def _create_network(self):
-        conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=10, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(self.sequence)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=10, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
@@ -76,26 +77,26 @@ class ExoCNN(Network):
 
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=7, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=7, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=4, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=4, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
@@ -103,13 +104,13 @@ class ExoCNN(Network):
 
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=64, kernel_size=3, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=64, kernel_size=3, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
