@@ -4,7 +4,7 @@ import os
 import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten, Softmax
+from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten
 from keras.models import Model, load_model
 from keras.optimizers import Nadam, Adam
 from keras.utils import to_categorical
@@ -136,12 +136,10 @@ class ExoCNN(Network):
         if self.dr_rate > 0:
             dense = Dropout(self.dr_rate)(dense)
 
-        logits = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
-        probs = Softmax()(logits)
+        probs = Dense(self.n_classes, activation='relu', kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
 
         self.model = Model(inputs=self.sequence, outputs=probs)
         self.aux_models['latent'] = Model(inputs=self.sequence, outputs=dense)
-        self.aux_models['softmax'] = Model(inputs=self.sequence, outputs=logits)
 
 
     def _compile_models(self):
