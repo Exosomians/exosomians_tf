@@ -60,17 +60,24 @@ class ExoCNNLSTM(Network):
             self.model.summary()
 
     def _create_network(self):
-        h = Conv1D(filters=32, kernel_size=8, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        h = Conv1D(filters=128, kernel_size=8, padding='same', kernel_initializer=self.init_w, use_bias=False,
                    kernel_regularizer=self.regularizer)(self.x)
-        if self.use_batchnorm:
-            h = BatchNormalization(trainable=True)(h)
         h = LeakyReLU()(h)
         h = MaxPooling1D(pool_size=2)(h)
+        h = Conv1D(filters=64, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+                   kernel_regularizer=self.regularizer)(h)
+        h = MaxPooling1D(pool_size=2)(h)
 
-        h = LSTM(16, activation='linear', return_sequences=False)(h)  # (None, 16)
-        h = LeakyReLU()(h)
+        h = LSTM(128, return_sequences=True)(h)
 
-        h = Dense(32, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(h)
+        if self.dr_rate > 0:
+            h = Dropout(self.dr_rate)(h)
+
+        h = LSTM(32, return_sequences=False)(h)
+        if self.dr_rate > 0:
+            h = Dropout(self.dr_rate)(h)
+
+        h = Dense(16, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(h)
         if self.use_batchnorm:
             h = BatchNormalization()(h)
         h = LeakyReLU()(h)
@@ -78,7 +85,6 @@ class ExoCNNLSTM(Network):
             h = Dropout(self.dr_rate)(h)
 
         output = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer,
-                       bias_initializer=keras.initializers.Constant(-math.log((1 - 0.01) / 0.01)),
                        activation='softmax')(h)
 
         self.model = Model(inputs=self.x, outputs=output)
