@@ -136,7 +136,7 @@ class ExoCNN(Network):
         if self.dr_rate > 0:
             dense = Dropout(self.dr_rate)(dense)
 
-        probs = Dense(self.n_classes, activation='relu', kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
+        probs = Dense(self.n_classes, activation='softmax', kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
 
         self.model = Model(inputs=self.sequence, outputs=probs)
         self.aux_models['latent'] = Model(inputs=self.sequence, outputs=dense)
