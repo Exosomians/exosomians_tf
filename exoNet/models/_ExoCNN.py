@@ -4,7 +4,7 @@ import os
 import keras
 import numpy as np
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten
+from keras.layers import Input, Dense, BatchNormalization, Dropout, Conv1D, MaxPooling1D, Flatten, Softmax
 from keras.models import Model, load_model
 from keras.optimizers import Nadam, Adam
 from keras.utils import to_categorical
@@ -48,6 +48,8 @@ class ExoCNN(Network):
             "lambda_l1": self.lambda_l1,
             "lambda_l2": self.lambda_l2,
         }
+
+        self.aux_models = {}
 
         self.init_w = keras.initializers.glorot_normal()
         self.regularizer = keras.regularizers.l1_l2(self.lambda_l1, self.lambda_l2)
@@ -128,18 +130,21 @@ class ExoCNN(Network):
         if self.dr_rate > 0:
             dense = Dropout(self.dr_rate)(dense)
 
-        output = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer,
-                       activation='softmax')(dense)
+        logits = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
+        probs = Softmax()(logits)
 
-        self.model = Model(inputs=self.sequence, outputs=output)
+        self.model = Model(inputs=self.sequence, outputs=probs)
+        self.aux_models['latent'] = Model(inputs=self.sequence, outputs=dense)
+        self.aux_models['softmax'] = Model(inputs=self.sequence, outputs=logits)
+
 
     def _compile_models(self):
         self.optimizer = Nadam(lr=self.lr)
         self.model.compile(optimizer=self.optimizer, loss=LOSSES[self.loss_fn],
                            metrics=['acc', METRICS['sensitivity'], METRICS['specificity']])
 
-    def to_latent(self):
-        pass
+    def to_latent(self, data):
+        return self.aux_models['latent'].predict(data)
 
     def predict(self, data):
         return self.label_encoder.inverse_transform(np.argmax(self.model.predict(data), axis=1))
