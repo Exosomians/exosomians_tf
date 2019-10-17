@@ -119,7 +119,12 @@ class ExoCNN(Network):
 
         flat = Flatten()(max_pool)
 
-        dense = Dense(128, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(flat)
+        dense = Dense(512, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(flat)
+        if self.use_batchnorm:
+            dense = BatchNormalization()(dense)
+        dense = ReLU()(dense)
+
+        dense = Dense(128, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(dense)
         if self.use_batchnorm:
             dense = BatchNormalization()(dense)
         dense = ReLU()(dense)
