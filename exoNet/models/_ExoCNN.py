@@ -30,6 +30,7 @@ class ExoCNN(Network):
         self.lambda_l1 = kwargs.get('lambda_l1', 0.0)
         self.lambda_l2 = kwargs.get('lambda_l2', 0.0)
         self.use_batchnorm = kwargs.get("use_batchnorm", False)
+        self.padding = kwargs.get("padding", "valid")
 
         self.sequence = Input(shape=(self.seq_len, self.n_channels,), name="data")
 
@@ -49,6 +50,8 @@ class ExoCNN(Network):
             "lambda_l2": self.lambda_l2,
         }
 
+        self.aux_models = {}
+
         self.init_w = keras.initializers.glorot_normal()
         self.regularizer = keras.regularizers.l1_l2(self.lambda_l1, self.lambda_l2)
         self._create_network()
@@ -60,13 +63,13 @@ class ExoCNN(Network):
             self.model.summary()
 
     def _create_network(self):
-        conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=10, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(self.sequence)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=10, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=10, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
@@ -74,26 +77,26 @@ class ExoCNN(Network):
 
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=7, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=7, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=7, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=4, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=32, kernel_size=4, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=32, kernel_size=4, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
@@ -101,13 +104,13 @@ class ExoCNN(Network):
 
         max_pool = MaxPooling1D(pool_size=2)(conv)
 
-        conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=64, kernel_size=3, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(max_pool)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
         conv = ReLU()(conv)
 
-        conv = Conv1D(filters=64, kernel_size=3, padding='same', kernel_initializer=self.init_w, use_bias=False,
+        conv = Conv1D(filters=64, kernel_size=3, padding=self.padding, kernel_initializer=self.init_w, use_bias=False,
                       kernel_regularizer=self.regularizer)(conv)
         if self.use_batchnorm:
             conv = BatchNormalization(trainable=True)(conv)
@@ -116,7 +119,12 @@ class ExoCNN(Network):
 
         flat = Flatten()(max_pool)
 
-        dense = Dense(128, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(flat)
+        dense = Dense(512, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(flat)
+        if self.use_batchnorm:
+            dense = BatchNormalization()(dense)
+        dense = ReLU()(dense)
+
+        dense = Dense(128, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer, use_bias=False)(dense)
         if self.use_batchnorm:
             dense = BatchNormalization()(dense)
         dense = ReLU()(dense)
@@ -128,18 +136,19 @@ class ExoCNN(Network):
         if self.dr_rate > 0:
             dense = Dropout(self.dr_rate)(dense)
 
-        output = Dense(self.n_classes, kernel_initializer=self.init_w, kernel_regularizer=self.regularizer,
-                       activation='softmax')(dense)
+        probs = Dense(self.n_classes, activation='softmax', kernel_initializer=self.init_w, kernel_regularizer=self.regularizer)(dense)
 
-        self.model = Model(inputs=self.sequence, outputs=output)
+        self.model = Model(inputs=self.sequence, outputs=probs)
+        self.aux_models['latent'] = Model(inputs=self.sequence, outputs=dense)
+
 
     def _compile_models(self):
         self.optimizer = Nadam(lr=self.lr)
         self.model.compile(optimizer=self.optimizer, loss=LOSSES[self.loss_fn],
                            metrics=['acc', METRICS['sensitivity'], METRICS['specificity']])
 
-    def to_latent(self):
-        pass
+    def to_latent(self, data):
+        return self.aux_models['latent'].predict(data)
 
     def predict(self, data):
         return self.label_encoder.inverse_transform(np.argmax(self.model.predict(data), axis=1))
