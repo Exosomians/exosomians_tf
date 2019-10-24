@@ -46,7 +46,7 @@ write.table( targetInfo, 'YBX1_CLIP/YBX1_amir/initial_regions.bed',
 
 #### finding intersection and visualization
 ## How to find intersection with bedtools 
-# bedtools intersect -wao -f 0.2 -r -a initial_regions.bed -b  YBX1_counts_hg38.bed  > initialReg_intersect_0.2_YBX1.bed 
+# bedtools intersect -wao -f 0.2 -r -s -a initial_regions.bed -b  YBX1_counts_hg38.bed  > initialReg_intersect_0.2_YBX1.bed 
 
 .preprocessIntersection <- function(intersect_file, original_bed, clip_bed){
   colnames(intersect_file) <- c(original_bed,paste0(clip_bed,'_clip'),'intersect')
@@ -103,7 +103,7 @@ cor(intersect$D00163.001, intersect$D00163.002)
 peaks <-read.delim('YBX1_CLIP/shID-123.uniq.YBX1.CIMS.fdr10.c_hg38.bed', header= F)
 colnames(peaks) <- c('chr', 'start', 'end', 'info', 'count', 'strand')
 
-# bedtools intersect -wao -f 0.2 -r -a initial_regions.bed -b  shID-123.uniq.YBX1.CIMS.fdr10.c_hg38.bed  > initialReg_intersect_0.2_YBX1Peaks.bed 
+# bedtools intersect -wao -f 0.2 -r -s -a initial_regions.bed -b  shID-123.uniq.YBX1.CIMS.fdr10.c_hg38.bed  > initialReg_intersect_0.2_YBX1Peaks.bed 
 peak_intersect <- read.delim('YBX1_CLIP/YBX1_amir/initialReg_intersect_0.2_YBX1Peaks.bed', header= F)
 peak_intersect <- .preprocessIntersection(peak_intersect, colnames(targetInfo) , colnames(peaks))
 head(peak_intersect)
